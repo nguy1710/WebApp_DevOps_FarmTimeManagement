@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Farm Time Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="d-flex align-items-center position-relative" style="min-height:100vh; overflow:hidden;">
+  <!-- Background -->
+  <div class="position-absolute top-0 start-0 w-100 h-100" 
+       style="background: url('assets/background.png') no-repeat center center fixed;
+              background-size: cover;              
+              opacity: 0.9;
+              z-index: 0;">
+  </div>
+
+
+<!-- Login form -->
+<div class="container position-relative" style="z-index: 1;">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card p-4 shadow bg-white"> 
+
+        <!-- Logo -->
+<div class="text-center mb-3">
+  <img src="assets/beerenberglogo.png" 
+       alt="Farm Time Logo" 
+       class="rounded-3"
+       style="width:200px; height:auto; object-fit:cover;">
+</div> 
+
+
+
+      
+        <h2 class="mb-3 text-danger text-center">Adelaide Farm Time Management</h5>
+        <h3 class="mb-3 text-success text-center">Login Page</h3>
+
+        <form id="loginForm" novalidate>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" class="form-control" required>
+          </div>
+          <button id="loginBtn" type="submit" class="btn btn-primary w-100">
+            <span id="loginSpinner" class="spinner-border spinner-border-sm d-none"></span>
+            Login
+          </button>
+
+            <p class="text-danger text-center mt-2 mb-0" style="font-size: 0.85rem; font-weight:500;">Only Admin can login</p>
+
+            <p class="text-center mt-2 mb-0" style="font-size: 0.85rem; font-weight:500;">DevOps and Enterprise Systems Project</p>
+
+        </form>
+        <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  <script>window.API_BASE="https://flindersdevops.azurewebsites.net/api";</script>
+  <script src="js/login.js"></script>
+</body>
+
+
+</html>
