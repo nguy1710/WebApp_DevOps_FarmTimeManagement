@@ -1,63 +1,74 @@
 function authHeader() {
-  const u = JSON.parse(localStorage.getItem('farm_user') || 'null');
-  return u && u.token ? { 'Authorization': 'Bearer ' + u.token } : {};
+  const u = JSON.parse(localStorage.getItem("farm_user") || "null");
+  return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
-
-
-
 (function () {
-  const user = JSON.parse(localStorage.getItem('farm_user') || 'null');
-  const userWelcome = document.getElementById('userWelcome');
-  const btnLogout = document.getElementById('btnLogout');
-  const loadingBox = document.getElementById('loadingBox');
-  const loadError = document.getElementById('loadError');
-  const tableBody = document.getElementById('tableBody');
-  const searchInput = document.getElementById('searchInput');
+  const user = JSON.parse(localStorage.getItem("farm_user") || "null");
+  const userWelcome = document.getElementById("userWelcome");
+  const btnLogout = document.getElementById("btnLogout");
+  const loadingBox = document.getElementById("loadingBox");
+  const loadError = document.getElementById("loadError");
+  const tableBody = document.getElementById("tableBody");
+  const searchInput = document.getElementById("searchInput");
 
   // New filter controls
-  const filterRole = document.getElementById('filterRole');
-  const filterContract = document.getElementById('filterContract');
-  const minStdHours = document.getElementById('minStdHours');
-  const maxStdHours = document.getElementById('maxStdHours');
-  const minStdPay = document.getElementById('minStdPay');
-  const maxStdPay = document.getElementById('maxStdPay');
-  const minOvertime = document.getElementById('minOvertime');
-  const maxOvertime = document.getElementById('maxOvertime');
-  const btnClearFilters = document.getElementById('btnClearFilters');
+  const filterRole = document.getElementById("filterRole");
+  const filterContract = document.getElementById("filterContract");
+  const minStdHours = document.getElementById("minStdHours");
+  const maxStdHours = document.getElementById("maxStdHours");
+  const minStdPay = document.getElementById("minStdPay");
+  const maxStdPay = document.getElementById("maxStdPay");
+  const minOvertime = document.getElementById("minOvertime");
+  const maxOvertime = document.getElementById("maxOvertime");
+  const btnClearFilters = document.getElementById("btnClearFilters");
 
   // Guard page
-  if (!user) { window.location.href = 'login.html'; return; }
-  if (userWelcome) userWelcome.textContent = user?.FirstName ? `Hello, ${user.FirstName}!` : (user?.Email || 'Logged in');
-  if (btnLogout) btnLogout.addEventListener('click', () => { localStorage.removeItem('farm_user'); window.location.href = 'login.html'; });
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+  if (userWelcome)
+    userWelcome.textContent = user?.FirstName
+      ? `Hello, ${user.FirstName}!`
+      : user?.Email || "Logged in";
+  if (btnLogout)
+    btnLogout.addEventListener("click", () => {
+      localStorage.removeItem("farm_user");
+      window.location.href = "login.html";
+    });
 
   // Load list
   let staffData = [];
   async function fetchStaffs() {
     try {
-
-      
-  const res = await fetch(`${window.API_BASE}/Staffs/`, { 
-  method: 'GET', 
-  headers: { ...authHeader() } 
- });
-
+      const res = await fetch(`${window.API_BASE}/Staffs/`, {
+        method: "GET",
+        headers: { ...authHeader() },
+      });
 
       if (!res.ok) throw new Error(`Loading failed (HTTP ${res.status}).`);
       const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('Response was not array.');
+      if (!Array.isArray(data)) throw new Error("Response was not array.");
       staffData = data;
       renderTable(staffData);
       // apply current filters (if user typed before data loaded)
       applyFilters();
     } catch (err) {
-      if (loadError) { loadError.textContent = err.message || 'Cannot download data.'; loadError.classList.remove('d-none'); }
-    } finally { if (loadingBox) loadingBox.classList.add('d-none'); }
+      if (loadError) {
+        loadError.textContent = err.message || "Cannot download data.";
+        loadError.classList.remove("d-none");
+      }
+    } finally {
+      if (loadingBox) loadingBox.classList.add("d-none");
+    }
   }
 
   function renderTable(rows) {
     if (!tableBody) return;
-    tableBody.innerHTML = rows.map(r => `
+    tableBody.innerHTML = rows
+      .map(
+        (r) => `
       <tr>
         <td>${safe(r.StaffId)}</td>
         <td>${safe(r.FirstName)}</td>
@@ -81,10 +92,14 @@ function authHeader() {
           </span>
         </td>
       </tr>
-    `).join('');
+    `
+      )
+      .join("");
   }
 
-  function safe(val) { return (val ?? '') + ''; }
+  function safe(val) {
+    return (val ?? "") + "";
+  }
 
   // Helpers for filters
   function toNum(v) {
@@ -92,14 +107,17 @@ function authHeader() {
     return Number.isFinite(n) ? n : null;
   }
   function includesText(haystack, needle) {
-    return (haystack || '').toString().toLowerCase().includes((needle || '').toLowerCase());
+    return (haystack || "")
+      .toString()
+      .toLowerCase()
+      .includes((needle || "").toLowerCase());
   }
 
   // Apply combined filters
   function applyFilters() {
-    const q = (searchInput?.value || '').trim().toLowerCase();
-    const role = (filterRole?.value || '').trim();
-    const contract = (filterContract?.value || '').trim();
+    const q = (searchInput?.value || "").trim().toLowerCase();
+    const role = (filterRole?.value || "").trim();
+    const contract = (filterContract?.value || "").trim();
 
     const minH = toNum(minStdHours?.value);
     const maxH = toNum(maxStdHours?.value);
@@ -108,20 +126,28 @@ function authHeader() {
     const minO = toNum(minOvertime?.value);
     const maxO = toNum(maxOvertime?.value);
 
-    const filtered = staffData.filter(s => {
+    const filtered = staffData.filter((s) => {
       // text search across common fields
-      const textOk = !q || [
-        s.FirstName, s.LastName, s.Email, s.Phone, s.Address, s.ContractType, s.Role
-      ].some(x => includesText(x, q));
+      const textOk =
+        !q ||
+        [
+          s.FirstName,
+          s.LastName,
+          s.Email,
+          s.Phone,
+          s.Address,
+          s.ContractType,
+          s.Role,
+        ].some((x) => includesText(x, q));
 
       // select filters
-      const roleOk = !role || (s.Role === role);
-      const contractOk = !contract || (s.ContractType === contract);
+      const roleOk = !role || s.Role === role;
+      const contractOk = !contract || s.ContractType === contract;
 
       // numeric ranges (null/undefined treated as missing; must meet bounds if provided)
-      const h = parseFloat(s.StandardHoursPerWeek ?? '');
-      const p = parseFloat(s.StandardPayRate ?? '');
-      const o = parseFloat(s.OvertimePayRate ?? '');
+      const h = parseFloat(s.StandardHoursPerWeek ?? "");
+      const p = parseFloat(s.StandardPayRate ?? "");
+      const o = parseFloat(s.OvertimePayRate ?? "");
 
       const hoursOk =
         (minH == null || (Number.isFinite(h) && h >= minH)) &&
@@ -142,7 +168,7 @@ function authHeader() {
   }
 
   // Wire events
-  ['input', 'change'].forEach(evt => {
+  ["input", "change"].forEach((evt) => {
     if (searchInput) searchInput.addEventListener(evt, applyFilters);
     if (filterRole) filterRole.addEventListener(evt, applyFilters);
     if (filterContract) filterContract.addEventListener(evt, applyFilters);
@@ -155,45 +181,49 @@ function authHeader() {
   });
 
   if (btnClearFilters) {
-    btnClearFilters.addEventListener('click', () => {
-      if (searchInput) searchInput.value = '';
-      if (filterRole) filterRole.value = '';
-      if (filterContract) filterContract.value = '';
-      if (minStdHours) minStdHours.value = '';
-      if (maxStdHours) maxStdHours.value = '';
-      if (minStdPay) minStdPay.value = '';
-      if (maxStdPay) maxStdPay.value = '';
-      if (minOvertime) minOvertime.value = '';
-      if (maxOvertime) maxOvertime.value = '';
+    btnClearFilters.addEventListener("click", () => {
+      if (searchInput) searchInput.value = "";
+      if (filterRole) filterRole.value = "";
+      if (filterContract) filterContract.value = "";
+      if (minStdHours) minStdHours.value = "";
+      if (maxStdHours) maxStdHours.value = "";
+      if (minStdPay) minStdPay.value = "";
+      if (maxStdPay) maxStdPay.value = "";
+      if (minOvertime) minOvertime.value = "";
+      if (maxOvertime) maxOvertime.value = "";
       applyFilters();
     });
   }
 
   // Delete (event delegation)
   if (tableBody) {
-    tableBody.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.btn-del');
+    tableBody.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".btn-del");
       if (!btn) return;
-      const id = btn.getAttribute('data-id');
-      const name = btn.getAttribute('data-name') || `#${id}`;
+      const id = btn.getAttribute("data-id");
+      const name = btn.getAttribute("data-name") || `#${id}`;
       if (!id) return;
       const ok = confirm(`Are you sure want to delete this staff ${name}?`);
       if (!ok) return;
       try {
-
-
-  const res = await fetch(`${window.API_BASE}/Staffs/${encodeURIComponent(id)}`, { 
-    method: 'DELETE',
-    headers: { ...authHeader() }
- });
-
+        const res = await fetch(
+          `${window.API_BASE}/Staffs/${encodeURIComponent(id)}`,
+          {
+            method: "DELETE",
+            headers: { ...authHeader() },
+          }
+        );
 
         if (!res.ok) throw new Error(`Failed to delete (HTTP ${res.status}).`);
         const json = await res.json(); // server returns deleted staff JSON
-        alert(`Deleted: ${json.FirstName || ''} ${json.LastName || ''} (ID: ${json.StaffId})`);
+        alert(
+          `Deleted: ${json.FirstName || ""} ${json.LastName || ""} (ID: ${
+            json.StaffId
+          })`
+        );
         await fetchStaffs(); // refresh list
       } catch (err) {
-        alert(err.message || 'Cannot delete staff.');
+        alert(err.message || "Cannot delete staff.");
       }
     });
   }
