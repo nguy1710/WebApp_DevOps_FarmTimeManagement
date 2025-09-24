@@ -95,7 +95,15 @@ function authHeader() {
     select.innerHTML = '<option value="">Select Staff</option>';
     allStaff.forEach((staff) => {
       const option = document.createElement("option");
-      option.value = staff.StaffId;
+      // =================================================================
+      // Bug Fix: Staff Dropdown Selection Issue
+      // Developer: Tim
+      // Date: 2025-09-25
+      // Description: Convert StaffId to string for proper dropdown selection
+      // Issue: Dropdown fails to preselect staff when editing shifts
+      // Bug Reference: Bug #2
+      // =================================================================
+      option.value = String(staff.StaffId);
       option.textContent = `${staff.FirstName} ${staff.LastName}`;
       select.appendChild(option);
     });
@@ -265,7 +273,15 @@ function authHeader() {
     if (shiftData) {
       shiftModalTitle.textContent = "Edit Shift";
       document.getElementById("shiftId").value = shiftData.ShiftId || "";
-      document.getElementById("shiftStaffId").value = shiftData.StaffId || "";
+      // =================================================================
+      // Bug Fix: Staff Preselection Type Consistency
+      // Developer: Tim
+      // Date: 2025-09-25
+      // Description: Ensure consistent string type for staff preselection
+      // Issue: Type mismatch prevents proper staff selection in edit mode
+      // Bug Reference: Bug #2
+      // =================================================================
+      document.getElementById("shiftStaffId").value = String(shiftData.StaffId || "");
       document.getElementById("shiftDate").value = shiftData.ShiftDate || "";
       document.getElementById("shiftStartTime").value =
         shiftData.StartTime || "";
@@ -380,11 +396,20 @@ function authHeader() {
     });
   }
 
-  document
-    .getElementById("shiftStaffId")
-    .addEventListener("change", async () => {
+  // =================================================================
+  // Bug Fix: Safe Event Listener Attachment
+  // Developer: Tim
+  // Date: 2025-09-25
+  // Description: Add null check for safer event listener attachment
+  // Issue: Potential null reference error if DOM element not found
+  // Bug Reference: Bug #2
+  // =================================================================
+  const shiftStaffSelect = document.getElementById("shiftStaffId");
+  if (shiftStaffSelect) {
+    shiftStaffSelect.addEventListener("change", async () => {
       overlapWarning.classList.add("d-none");
     });
+  }
 
   ["shiftDate", "shiftStartTime", "shiftEndTime"].forEach((id) => {
     document.getElementById(id).addEventListener("change", async () => {
