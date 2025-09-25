@@ -90,10 +90,9 @@ function authHeader() {
     }
   }
 
-  function populateStaffSelect(isEditMode = false) {
+  function populateStaffSelect() {
     const select = document.getElementById("shiftStaffId");
-    // Only show "Select Staff" option in Add mode, not Edit mode
-    select.innerHTML = isEditMode ? '' : '<option value="">Select Staff</option>';
+    select.innerHTML = '<option value="">Select Staff</option>';
     allStaff.forEach((staff) => {
       const option = document.createElement("option");
       // =================================================================
@@ -126,9 +125,7 @@ function authHeader() {
       weekEnd.setDate(weekEnd.getDate() + 6);
 
       const res = await fetch(
-        `${window.API_BASE}/Shifts?startDate=${formatDate(
-          currentWeekStart
-        )}&endDate=${formatDate(weekEnd)}`,
+        `${window.API_BASE}/Roster`,
         {
           method: "GET",
           headers: { ...authHeader() },
@@ -137,7 +134,23 @@ function authHeader() {
       if (!res.ok)
         throw new Error(`Failed to load shifts (HTTP ${res.status})`);
       const data = await res.json();
-      allShifts = Array.isArray(data) ? data : [];
+      const schedules = Array.isArray(data) ? data : [];
+
+      // Filter schedules for current week and map to shift format for compatibility
+      allShifts = schedules
+        .filter(schedule => {
+          const scheduleDate = new Date(schedule.StartTime);
+          return scheduleDate >= currentWeekStart && scheduleDate <= weekEnd;
+        })
+        .map(schedule => ({
+          ShiftId: schedule.ScheduleId,
+          StaffId: schedule.StaffId,
+          ShiftDate: schedule.StartTime.split('T')[0],
+          StartTime: schedule.StartTime.split('T')[1].substring(0, 8),
+          EndTime: schedule.EndTime.split('T')[1].substring(0, 8),
+          Notes: schedule.Notes || ""
+        }));
+
       renderSchedule();
     } catch (err) {
       if (loadError) {
@@ -245,13 +258,21 @@ function authHeader() {
   async function saveShift(shiftData) {
     const method = shiftData.ShiftId ? "PUT" : "POST";
     const url = shiftData.ShiftId
-      ? `${window.API_BASE}/Shifts/${shiftData.ShiftId}`
-      : `${window.API_BASE}/Shifts`;
+      ? `${window.API_BASE}/Roster/${shiftData.ShiftId}`
+      : `${window.API_BASE}/Roster/assign`;
+
+    // Convert shift data to roster format
+    const rosterData = {
+      StaffId: parseInt(shiftData.StaffId),
+      StartTime: `${shiftData.ShiftDate}T${shiftData.StartTime}`,
+      EndTime: `${shiftData.ShiftDate}T${shiftData.EndTime}`,
+      Notes: shiftData.Notes
+    };
 
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json", ...authHeader() },
-      body: JSON.stringify(shiftData),
+      body: JSON.stringify(rosterData),
     });
 
     if (!res.ok) throw new Error(`Failed to save shift (HTTP ${res.status})`);
@@ -259,7 +280,7 @@ function authHeader() {
   }
 
   async function deleteShift(shiftId) {
-    const res = await fetch(`${window.API_BASE}/Shifts/${shiftId}`, {
+    const res = await fetch(`${window.API_BASE}/Roster/${shiftId}`, {
       method: "DELETE",
       headers: { ...authHeader() },
     });
@@ -271,31 +292,75 @@ function authHeader() {
     form.classList.remove("was-validated");
     overlapWarning.classList.add("d-none");
 
+    const staffSelect = document.getElementById("shiftStaffId");
+    const staffSelectGroup = staffSelect.closest('.mb-3'); // Get the form group container
+
     if (shiftData) {
-      // Edit mode - repopulate without "Select Staff" option
-      populateStaffSelect(true);
-      shiftModalTitle.textContent = "Edit Shift";
+      const isEditMode = shiftData.ShiftId; // Check if editing existing shift
+      const isStaffLocked = shiftData.StaffId && !isEditMode; // Lock staff when adding to specific person
+
+      if (isEditMode) {
+        shiftModalTitle.textContent = "Edit Shift";
+      } else {
+        shiftModalTitle.textContent = "Add Shift";
+      }
+
       document.getElementById("shiftId").value = shiftData.ShiftId || "";
-      // =================================================================
-      // Bug Fix: Staff Preselection Type Consistency
-      // Developer: Tim
-      // Date: 2025-09-25
-      // Description: Ensure consistent string type for staff preselection
-      // Issue: Type mismatch prevents proper staff selection in edit mode
-      // Bug Reference: Bug #2
-      // =================================================================
-      document.getElementById("shiftStaffId").value = String(shiftData.StaffId || "");
       document.getElementById("shiftDate").value = shiftData.ShiftDate || "";
-      document.getElementById("shiftStartTime").value =
-        shiftData.StartTime || "";
+      document.getElementById("shiftStartTime").value = shiftData.StartTime || "";
       document.getElementById("shiftEndTime").value = shiftData.EndTime || "";
       document.getElementById("shiftNotes").value = shiftData.Notes || "";
+
+      if (isStaffLocked) {
+        // =================================================================
+        // Bug Fix: Lock Staff Selection for Specific Person Assignment
+        // Developer: Tim
+        // Date: 2025-09-25
+        // Description: Disable staff dropdown when adding shift to specific person
+        // Issue: Users could change staff assignment when clicking person's +Add button
+        // Bug Reference: Bug #2
+        // =================================================================
+
+        // Hide the dropdown and show staff name as read-only text
+        staffSelect.style.display = 'none';
+        staffSelect.value = String(shiftData.StaffId);
+
+        // Create or update read-only staff display
+        let staffDisplay = staffSelectGroup.querySelector('.staff-display-readonly');
+        if (!staffDisplay) {
+          staffDisplay = document.createElement('div');
+          staffDisplay.className = 'staff-display-readonly form-control-plaintext fw-bold';
+          staffSelectGroup.appendChild(staffDisplay);
+        }
+
+        // Find and display staff name
+        const staff = allStaff.find(s => s.StaffId == shiftData.StaffId);
+        staffDisplay.textContent = staff ? `${staff.FirstName} ${staff.LastName}` : 'Unknown Staff';
+        staffDisplay.style.display = 'block';
+      } else {
+        // Show dropdown for edit mode or when no specific staff
+        staffSelect.style.display = 'block';
+        staffSelect.value = String(shiftData.StaffId || "");
+
+        // Hide read-only display if it exists
+        const staffDisplay = staffSelectGroup.querySelector('.staff-display-readonly');
+        if (staffDisplay) {
+          staffDisplay.style.display = 'none';
+        }
+      }
     } else {
-      // Add mode - include "Select Staff" option
-      populateStaffSelect(false);
       shiftModalTitle.textContent = "Add Shift";
       form.reset();
       document.getElementById("shiftId").value = "";
+
+      // Show dropdown for general add shift
+      staffSelect.style.display = 'block';
+
+      // Hide read-only display if it exists
+      const staffDisplay = staffSelectGroup.querySelector('.staff-display-readonly');
+      if (staffDisplay) {
+        staffDisplay.style.display = 'none';
+      }
     }
 
     shiftModal.show();
