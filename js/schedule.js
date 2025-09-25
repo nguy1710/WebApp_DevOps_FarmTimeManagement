@@ -90,9 +90,10 @@ function authHeader() {
     }
   }
 
-  function populateStaffSelect() {
+  function populateStaffSelect(isEditMode = false) {
     const select = document.getElementById("shiftStaffId");
-    select.innerHTML = '<option value="">Select Staff</option>';
+    // Only show "Select Staff" option in Add mode, not Edit mode
+    select.innerHTML = isEditMode ? '' : '<option value="">Select Staff</option>';
     allStaff.forEach((staff) => {
       const option = document.createElement("option");
       // =================================================================
@@ -271,6 +272,8 @@ function authHeader() {
     overlapWarning.classList.add("d-none");
 
     if (shiftData) {
+      // Edit mode - repopulate without "Select Staff" option
+      populateStaffSelect(true);
       shiftModalTitle.textContent = "Edit Shift";
       document.getElementById("shiftId").value = shiftData.ShiftId || "";
       // =================================================================
@@ -288,6 +291,8 @@ function authHeader() {
       document.getElementById("shiftEndTime").value = shiftData.EndTime || "";
       document.getElementById("shiftNotes").value = shiftData.Notes || "";
     } else {
+      // Add mode - include "Select Staff" option
+      populateStaffSelect(false);
       shiftModalTitle.textContent = "Add Shift";
       form.reset();
       document.getElementById("shiftId").value = "";
