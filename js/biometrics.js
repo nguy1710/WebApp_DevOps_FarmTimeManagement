@@ -27,15 +27,6 @@ function authHeader() {
   const biometricModalTitle = document.getElementById("biometricModalTitle");
   const biometricSpinner = document.getElementById("biometricSpinner");
 
-  if (userWelcome)
-    userWelcome.textContent = user?.FirstName
-      ? `Hello, ${user.FirstName}!`
-      : user?.Email || "Logged in";
-  if (btnLogout)
-    btnLogout.addEventListener("click", () => {
-      localStorage.removeItem("farm_user");
-      window.location.href = "login.html";
-    });
 
   let allStaff = [];
   let biometricData = [];

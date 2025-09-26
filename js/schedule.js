@@ -28,15 +28,6 @@ function authHeader() {
   const shiftSpinner = document.getElementById("shiftSpinner");
   const overlapWarning = document.getElementById("overlapWarning");
 
-  if (userWelcome)
-    userWelcome.textContent = user?.FirstName
-      ? `Hello, ${user.FirstName}!`
-      : user?.Email || "Logged in";
-  if (btnLogout)
-    btnLogout.addEventListener("click", () => {
-      localStorage.removeItem("farm_user");
-      window.location.href = "login.html";
-    });
 
   let currentWeekStart = getWeekStart(new Date());
   let allStaff = [];

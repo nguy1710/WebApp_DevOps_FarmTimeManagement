@@ -28,15 +28,6 @@ function authHeader() {
     window.location.href = "login.html";
     return;
   }
-  if (userWelcome)
-    userWelcome.textContent = user?.FirstName
-      ? `Hello, ${user.FirstName}!`
-      : user?.Email || "Logged in";
-  if (btnLogout)
-    btnLogout.addEventListener("click", () => {
-      localStorage.removeItem("farm_user");
-      window.location.href = "login.html";
-    });
 
   // Load list
   let staffData = [];

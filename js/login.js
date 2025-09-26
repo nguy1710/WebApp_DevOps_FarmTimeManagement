@@ -39,6 +39,8 @@
       if (!data || typeof data !== "object")
         throw new Error("Invalid response.");
       localStorage.setItem("farm_user", JSON.stringify(data));
+      console.log('Login successful, data saved:', data);
+      console.log('Redirecting to dashboard...');
       window.location.href = "dashboard.html";
     } catch (err) {
       errorBox.textContent = err.message || "There was error.";
