@@ -10,47 +10,24 @@
     />
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-primary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="dashboard.html">
-          <img
-            src="./assets/flinderslogo.png"
-            alt="Farm Time Management"
-            height="50"
-          />
-        </a>
-        <div class="d-flex align-items-center gap-2">
-          <a href="create-staff.html" class="btn btn-warning btn-sm"
-            >Create Staff</a
-          >
-          <a href="schedule.html" class="btn btn-warning btn-sm">Schedule</a>
-          <a href="biometrics.html" class="btn btn-warning btn-sm"
-            >Biometrics</a
-          >
-          <a href="attendance.html" class="btn btn-warning btn-sm"
-            >Attendance</a
-          >
-          <a href="history.html" class="btn btn-warning btn-sm">Log History</a>
-
-          <span id="userWelcome" class="ms-2 me-2 text-white small"></span>
-          <button id="btnLogout" class="btn btn-outline-light btn-sm">
-            Logout
-          </button>
-        </div>
-      </div>
-    </nav>
+    <div id="navigation-container"></div>
 
     <main class="container py-4">
       <!-- Title + free text search -->
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Staff List</h3>
-        <input
-          id="searchInput"
-          type="text"
-          class="form-control"
-          placeholder="Search name/email/phone..."
-          style="max-width: 280px"
-        />
+        <div class="d-flex gap-2">
+          <a href="create-staff.html" class="btn btn-primary btn-sm">
+            Create Staff
+          </a>
+          <input
+            id="searchInput"
+            type="text"
+            class="form-control"
+            placeholder="Search name/email/phone..."
+            style="max-width: 280px"
+          />
+        </div>
       </div>
 
       <!-- Select filters -->
@@ -186,6 +163,7 @@
     <script>
       window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
     </script>
+    <script src="js/navigation.js"></script>
     <script src="js/dashboard.js"></script>
   </body>
 </html>

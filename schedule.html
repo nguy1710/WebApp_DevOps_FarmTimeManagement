@@ -11,30 +11,7 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-primary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="dashboard.html">
-          <img
-            src="./assets/flinderslogo.png"
-            alt="Farm Time Management"
-            height="50"
-          />
-        </a>
-        <div class="d-flex align-items-center gap-2">
-          <a href="dashboard.html" class="btn btn-warning btn-sm">Dashboard</a>
-          <a href="biometrics.html" class="btn btn-warning btn-sm"
-            >Biometrics</a
-          >
-          <a href="attendance.html" class="btn btn-warning btn-sm"
-            >Attendance</a
-          >
-          <span id="userWelcome" class="ms-2 me-2 text-white small"></span>
-          <button id="btnLogout" class="btn btn-outline-light btn-sm">
-            Logout
-          </button>
-        </div>
-      </div>
-    </nav>
+    <div id="navigation-container"></div>
 
     <main class="container-fluid py-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -183,6 +160,7 @@
     <script>
       window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
     </script>
+    <script src="js/navigation.js"></script>
     <script src="js/schedule.js"></script>
   </body>
 </html>

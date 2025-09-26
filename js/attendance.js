@@ -32,15 +32,6 @@ function authHeader() {
   const exceptionForm = document.getElementById("exceptionForm");
   const exceptionSpinner = document.getElementById("exceptionSpinner");
 
-  if (userWelcome)
-    userWelcome.textContent = user?.FirstName
-      ? `Hello, ${user.FirstName}!`
-      : user?.Email || "Logged in";
-  if (btnLogout)
-    btnLogout.addEventListener("click", () => {
-      localStorage.removeItem("farm_user");
-      window.location.href = "login.html";
-    });
 
   let allStaff = [];
   let attendanceRecords = [];
