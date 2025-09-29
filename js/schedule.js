@@ -329,16 +329,8 @@ async function getErrorMessage(response) {
       document.getElementById("shiftStartTime").value = shiftData.StartTime || "";
       document.getElementById("shiftEndTime").value = shiftData.EndTime || "";
 
-      if (isStaffLocked) {
-        // =================================================================
-        // Bug Fix: Lock Staff Selection for Specific Person Assignment
-        // Developer: Tim
-        // Date: 2025-09-25
-        // Description: Disable staff dropdown when adding shift to specific person
-        // Issue: Users could change staff assignment when clicking person's +Add button
-        // Bug Reference: Bug #2
-        // =================================================================
-
+      if (isStaffLocked || isEditMode) {
+        // Lock staff selection for both edit mode and when adding to specific person
         // Hide the dropdown and show staff name as read-only text
         staffSelect.style.display = 'none';
         staffSelect.value = String(shiftData.StaffId);
@@ -356,7 +348,7 @@ async function getErrorMessage(response) {
         staffDisplay.textContent = staff ? `${staff.FirstName} ${staff.LastName}` : 'Unknown Staff';
         staffDisplay.style.display = 'block';
       } else {
-        // Show dropdown for edit mode or when no specific staff
+        // Show dropdown for general add shift (not locked to specific person)
         staffSelect.style.display = 'block';
         staffSelect.value = String(shiftData.StaffId || "");
 
