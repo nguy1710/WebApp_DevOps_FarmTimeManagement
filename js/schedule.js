@@ -139,7 +139,7 @@ function authHeader() {
           ShiftDate: schedule.StartTime.split('T')[0],
           StartTime: schedule.StartTime.split('T')[1].substring(0, 8),
           EndTime: schedule.EndTime.split('T')[1].substring(0, 8),
-          Notes: schedule.Notes || ""
+          Notes: ""
         }));
 
       renderSchedule();
@@ -185,11 +185,6 @@ function authHeader() {
               0,
               5
             )} - ${shift.EndTime.substring(0, 5)}</div>
-            ${
-              shift.Notes
-                ? `<div class="text-muted small">${safe(shift.Notes)}</div>`
-                : ""
-            }
             <div class="d-flex justify-content-end gap-1 mt-1">
               <span class="text-primary edit-shift" data-shift-id="${
                 shift.ShiftId
@@ -257,7 +252,7 @@ function authHeader() {
       StaffId: parseInt(shiftData.StaffId),
       StartTime: `${shiftData.ShiftDate}T${shiftData.StartTime}`,
       EndTime: `${shiftData.ShiftDate}T${shiftData.EndTime}`,
-      Notes: shiftData.Notes
+      Notes: ""
     };
 
     const res = await fetch(url, {
@@ -300,7 +295,6 @@ function authHeader() {
       document.getElementById("shiftDate").value = shiftData.ShiftDate || "";
       document.getElementById("shiftStartTime").value = shiftData.StartTime || "";
       document.getElementById("shiftEndTime").value = shiftData.EndTime || "";
-      document.getElementById("shiftNotes").value = shiftData.Notes || "";
 
       if (isStaffLocked) {
         // =================================================================
@@ -428,7 +422,7 @@ function authHeader() {
         ShiftDate: document.getElementById("shiftDate").value,
         StartTime: document.getElementById("shiftStartTime").value + ":00",
         EndTime: document.getElementById("shiftEndTime").value + ":00",
-        Notes: document.getElementById("shiftNotes").value || null,
+        Notes: null,
       };
 
       const hasOverlap = await checkOverlap(

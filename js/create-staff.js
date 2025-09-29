@@ -4,6 +4,11 @@ function authHeader() {
   return u && u.token ? { 'Authorization': 'Bearer ' + u.token } : {};
 }
 
+function isValidPhoneNumber(phone) {
+  if (!phone || phone.trim() === '') return true; // Allow empty phone numbers
+  return /^[\+]?[0-9]{8,15}$/.test(phone.trim());
+}
+
 (function () {
   // Optional: protect page (require login like dashboard)
   const user = JSON.parse(localStorage.getItem('farm_user') || 'null');
@@ -26,6 +31,18 @@ function authHeader() {
     e.preventDefault();
     errorBox.classList.add('d-none');
     errorBox.textContent = '';
+
+    // Validate phone number
+    const phoneInput = document.getElementById('Phone');
+    const phoneValue = phoneInput.value.trim();
+    
+    if (phoneValue && !isValidPhoneNumber(phoneValue)) {
+      phoneInput.classList.add('is-invalid');
+      form.classList.add('was-validated');
+      return;
+    } else {
+      phoneInput.classList.remove('is-invalid');
+    }
 
     if (!form.checkValidity()) {
       form.classList.add('was-validated');
