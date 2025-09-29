@@ -4,6 +4,15 @@ function authHeader() {
   return u && u.token ? { 'Authorization': 'Bearer ' + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 function isValidPhoneNumber(phone) {
   if (!phone || phone.trim() === '') return true; // Allow empty phone numbers
   return /^[\+]?[0-9]{8,15}$/.test(phone.trim());
@@ -92,7 +101,10 @@ function isValidPhoneNumber(phone) {
       });
 
 
-      if (!res.ok) throw new Error(`Failed to create staff (HTTP ${res.status}).`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const created = await res.json();
       // Thành công: quay lại Dashboard (dashboard sẽ tự fetch lại danh sách)
       window.location.href = 'dashboard.html';

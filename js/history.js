@@ -3,6 +3,15 @@ function authHeader() {
   return u && u.token ? { 'Authorization': 'Bearer ' + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   // Bảo vệ trang như các trang nội bộ khác
   const user = JSON.parse(localStorage.getItem('farm_user') || 'null');
@@ -70,7 +79,10 @@ function authHeader() {
  });
 
 
-      if (!res.ok) throw new Error(`Failed to load history data (HTTP ${res.status}).`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       let data = await res.json();
       if (!Array.isArray(data)) data = data ? [data] : [];
       // Mới nhất lên trước nếu có Timestamp
@@ -121,7 +133,10 @@ function authHeader() {
  });
 
 
-        if (!res.ok) throw new Error(`Failed to delete (HTTP ${res.status}).`);
+        if (!res.ok) {
+          const errorMessage = await getErrorMessage(res);
+          throw new Error(errorMessage);
+        }
         // Nếu backend trả JSON object của bản ghi đã xóa, bạn có thể đọc để alert chi tiết:
         // const deleted = await res.json();
         // alert(\`Đã xóa: #\${deleted.HistoryId || deleted.historyId}\`);

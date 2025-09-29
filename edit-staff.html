@@ -16,7 +16,7 @@
   </nav>
 
   <main class="container py-4">
-    <h3 class="mb-3">Edit Staff</h3>
+    <h3 class="mb-3">Change information of Staff</h3>
     <form id="editStaffForm" class="needs-validation" novalidate>
       <input id="StaffId" type="hidden">
 
@@ -39,10 +39,6 @@
           <label class="form-label">Phone</label>
           <input id="Phone" class="form-control">
           <div class="invalid-feedback">Invalid phone number format. Use 8-15 digits with optional + prefix.</div>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">*Password (required)</label>
-          <input id="Password" type="password" class="form-control" required>
         </div>
         <div class="col-12">
           <label class="form-label">Address</label>
@@ -101,6 +97,38 @@
 
       <div id="editError" class="alert alert-danger mt-3 d-none"></div>
     </form>
+
+    <!-- Change Password Section -->
+    <div class="mt-5">
+      <h4 class="mb-3">Change password of Staff</h4>
+      <div class="card">
+        <div class="card-body">
+          <form id="changePasswordForm" class="needs-validation" novalidate>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="NewPassword" class="form-label">*New Password (required)</label>
+                <input type="password" id="NewPassword" class="form-control" required>
+                <div class="invalid-feedback">Please enter a new password.</div>
+              </div>
+              <div class="col-md-6">
+                <label for="ReenterPassword" class="form-label">*Re-enter Password (required)</label>
+                <input type="password" id="ReenterPassword" class="form-control" required>
+                <div class="invalid-feedback">Please re-enter the password.</div>
+              </div>
+            </div>
+            <div class="mt-3 d-flex gap-2">
+              <button id="btnChangePassword" type="submit" class="btn btn-primary">
+                <span id="passwordSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                Change Password
+              </button>
+              <button id="btnCancelPassword" type="button" class="btn btn-secondary">Cancel</button>
+            </div>
+            <div id="passwordError" class="alert alert-danger mt-3 d-none"></div>
+            <div id="passwordSuccess" class="alert alert-success mt-3 d-none"></div>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Config -->

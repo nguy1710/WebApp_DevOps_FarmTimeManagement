@@ -3,6 +3,15 @@ function authHeader() {
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   const user = JSON.parse(localStorage.getItem("farm_user") || "null");
   if (!user) {
@@ -57,7 +66,10 @@ function authHeader() {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok) throw new Error(`Failed to load staff (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       allStaff = Array.isArray(data) ? data : [];
     } catch (err) {
@@ -71,8 +83,10 @@ function authHeader() {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok)
-        throw new Error(`Failed to load biometrics (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       biometricData = Array.isArray(data) ? data : [];
       renderBiometrics();
@@ -249,8 +263,10 @@ function authHeader() {
       body: JSON.stringify(biometricData),
     });
 
-    if (!res.ok)
-      throw new Error(`Failed to save biometric (HTTP ${res.status})`);
+    if (!res.ok) {
+      const errorMessage = await getErrorMessage(res);
+      throw new Error(errorMessage);
+    }
     return await res.json();
   }
 
@@ -271,8 +287,10 @@ function authHeader() {
         }
       );
 
-      if (!res.ok)
-        throw new Error(`Failed to load history (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       const history = Array.isArray(data) ? data : [];
 

@@ -33,8 +33,26 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Email: email, Password: password }),
       });
-      if (!res.ok)
-        throw new Error(`Wrong Email or Password (HTTP ${res.status}).`);
+      if (!res.ok) {
+        let errorMessage = `Login failed (HTTP ${res.status})`;
+        
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorData.error || errorData.detail || errorMessage;
+        } catch (parseError) {
+          // If JSON parsing fails, try to get response as text
+          try {
+            const textResponse = await res.text();
+            if (textResponse && textResponse.trim()) {
+              errorMessage = textResponse;
+            }
+          } catch (textError) {
+            // Keep the default error message if both JSON and text parsing fail
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       if (!data || typeof data !== "object")
         throw new Error("Invalid response.");

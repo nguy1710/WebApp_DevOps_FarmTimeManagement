@@ -3,6 +3,15 @@ function authHeader() {
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   const user = JSON.parse(localStorage.getItem("farm_user") || "null");
   if (!user) {
@@ -105,7 +114,10 @@ function authHeader() {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok) throw new Error(`Failed to load staff (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       allStaff = Array.isArray(data) ? data : [];
     } catch (err) {
@@ -159,7 +171,10 @@ function authHeader() {
         body: JSON.stringify({ StaffId: staffId }),
       });
 
-      if (!res.ok) throw new Error(`Clock action failed (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       return await res.json();
     } catch (err) {
       throw new Error(err.message || "Failed to process clock action");
@@ -201,8 +216,10 @@ function authHeader() {
         }
       );
 
-      if (!res.ok)
-        throw new Error(`Failed to load attendance (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       attendanceRecords = Array.isArray(data) ? data : [];
       renderAttendanceTable();
@@ -347,8 +364,10 @@ function authHeader() {
       }
     );
 
-    if (!res.ok)
-      throw new Error(`Failed to mark exception (HTTP ${res.status})`);
+    if (!res.ok) {
+      const errorMessage = await getErrorMessage(res);
+      throw new Error(errorMessage);
+    }
     return await res.json();
   }
 
