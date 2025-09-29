@@ -3,6 +3,15 @@ function authHeader() {
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   const user = JSON.parse(localStorage.getItem("farm_user") || "null");
   if (!user) {
@@ -65,13 +74,32 @@ function authHeader() {
     return (val ?? "") + "";
   }
 
+  function formatTimeTo12Hour(time24) {
+    if (!time24) return "";
+    const time = time24.substring(0, 5); // Get HH:MM part
+    const [hours, minutes] = time.split(':');
+    let hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    
+    if (hour === 0) {
+      hour = 12; // 00:xx becomes 12:xx AM
+    } else if (hour > 12) {
+      hour = hour - 12; // 13:xx becomes 1:xx PM
+    }
+    
+    return `${hour}:${minutes} ${ampm}`;
+  }
+
   async function loadStaff() {
     try {
       const res = await fetch(`${window.API_BASE}/Staffs/`, {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok) throw new Error(`Failed to load staff (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       allStaff = Array.isArray(data) ? data : [];
       populateStaffSelect();
@@ -122,8 +150,10 @@ function authHeader() {
           headers: { ...authHeader() },
         }
       );
-      if (!res.ok)
-        throw new Error(`Failed to load shifts (HTTP ${res.status})`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       const schedules = Array.isArray(data) ? data : [];
 
@@ -181,10 +211,7 @@ function authHeader() {
           <div class="shift-block border rounded p-1 mb-1 bg-light" 
                style="font-size: 0.85em; cursor: pointer;"
                data-shift-id="${shift.ShiftId}">
-            <div class="fw-bold">${shift.StartTime.substring(
-              0,
-              5
-            )} - ${shift.EndTime.substring(0, 5)}</div>
+            <div class="fw-bold">${formatTimeTo12Hour(shift.StartTime)} - ${formatTimeTo12Hour(shift.EndTime)}</div>
             <div class="d-flex justify-content-end gap-1 mt-1">
               <span class="text-primary edit-shift" data-shift-id="${
                 shift.ShiftId
@@ -261,7 +288,10 @@ function authHeader() {
       body: JSON.stringify(rosterData),
     });
 
-    if (!res.ok) throw new Error(`Failed to save shift (HTTP ${res.status})`);
+    if (!res.ok) {
+      const errorMessage = await getErrorMessage(res);
+      throw new Error(errorMessage);
+    }
     return await res.json();
   }
 
@@ -270,7 +300,10 @@ function authHeader() {
       method: "DELETE",
       headers: { ...authHeader() },
     });
-    if (!res.ok) throw new Error(`Failed to delete shift (HTTP ${res.status})`);
+    if (!res.ok) {
+      const errorMessage = await getErrorMessage(res);
+      throw new Error(errorMessage);
+    }
   }
 
   function openShiftModal(shiftData = null) {
