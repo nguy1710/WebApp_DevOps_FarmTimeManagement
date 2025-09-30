@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Events - Farm Time Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+  </head>
+  <body>
+    <div id="navigation-container"></div>
+
+    <main class="container py-4">
+      <!-- Title + action buttons -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Clock In/Out Events</h3>
+        <div class="d-flex gap-2">
+          <button id="btnCreateEvent" class="btn btn-success btn-sm">
+            Create Event
+          </button>
+          <button id="btnRefresh" class="btn btn-primary btn-sm">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Realtime clock display -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="text-center py-3 bg-light rounded">
+            <div id="currentTime" class="display-4 text-primary mb-2"></div>
+            <div id="currentDate" class="h5 text-muted"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Select filters -->
+      <div class="row g-2 mb-3">
+        <div class="col-sm-6 col-md-3">
+          <label class="form-label mb-1">Event Type</label>
+          <select id="filterEventType" class="form-select">
+            <option value="">All</option>
+            <option>Clock In</option>
+            <option>Clock Out</option>
+          </select>
+        </div>
+        <div class="col-sm-6 col-md-6">
+          <label class="form-label mb-1">Search</label>
+          <input
+            id="searchInput"
+            type="text"
+            class="form-control"
+            placeholder="Search by staff name, device location, event type..."
+          />
+        </div>
+
+        <div
+          class="col-12 col-md-3 d-flex align-items-end justify-content-md-end"
+        >
+          <button
+            id="btnClearFilters"
+            class="btn btn-outline-secondary mt-2 mt-md-0"
+          >
+            Clear filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Date navigation controls -->
+      <div class="row g-2 mb-3">
+        <div class="col-12">
+          <div class="d-flex align-items-center gap-3">
+            <label class="form-label mb-0">Selected Date:</label>
+            <input
+              id="selectedDate"
+              type="date"
+              class="form-control"
+              style="width: auto; min-width: 150px;"
+            />
+            <div class="d-flex align-items-center gap-2">
+              <button id="btnPrevDay" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-chevron-left"></i> Previous Day
+              </button>
+              <button id="btnToday" class="btn btn-primary btn-sm">
+                Today
+              </button>
+              <button id="btnNextDay" class="btn btn-outline-secondary btn-sm">
+                Next Day <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loadingBox" class="alert alert-info">Loading events...</div>
+      <div id="loadError" class="alert alert-danger d-none"></div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Event ID</th>
+              <th>Timestamp</th>
+              <th>Staff Full Name</th>
+              <th>Device Location</th>
+              <th>Event Type</th>
+              <th>Reason</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <nav aria-label="Events pagination" class="mt-3">
+        <ul class="pagination justify-content-center" id="pagination">
+        </ul>
+      </nav>
+    </main>
+
+    <!-- Create Event Modal -->
+    <div class="modal fade" id="createEventModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">Create Event</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <form id="createEventForm" class="needs-validation" novalidate>
+            <div class="modal-body">
+              <input type="hidden" id="eventId" />
+              <div class="mb-3">
+                <label class="form-label">Staff *</label>
+                <select id="eventStaffId" class="form-select" required>
+                  <option value="">Select Staff</option>
+                </select>
+                <div class="invalid-feedback">Please select staff member.</div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Device *</label>
+                <select id="eventDeviceId" class="form-select" required>
+                  <option value="">Select Device</option>
+                </select>
+                <div class="invalid-feedback">Please select device.</div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Date & Time *</label>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <input
+                      id="eventDate"
+                      type="date"
+                      class="form-control"
+                      required
+                    />
+                    <div class="invalid-feedback">Please select date.</div>
+                  </div>
+                  <div class="col-6">
+                    <input
+                      id="eventTime"
+                      type="time"
+                      class="form-control"
+                      required
+                    />
+                    <div class="invalid-feedback">Please select time.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Event Type *</label>
+                <select id="eventType" class="form-select" required>
+                  <option value="">Select Event Type</option>
+                  <option value="Clock In">Clock In</option>
+                  <option value="Clock Out">Clock Out</option>
+                </select>
+                <div class="invalid-feedback">Please select event type.</div>
+              </div>
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="bypassValidation">
+                  <label class="form-check-label" for="bypassValidation">
+                    By Pass Validation
+                  </label>
+                </div>
+                <small class="form-text text-muted">Enable to unlock Reason field for manual entry</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <textarea
+                  id="eventReason"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Enter reason for this event (unlock with By Pass Validation)"
+                  disabled
+                ></textarea>
+                <small class="form-text text-muted">Reason field is locked. Enable "By Pass Validation" to unlock.</small>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-success">
+                <span
+                  id="createEventSpinner"
+                  class="spinner-border spinner-border-sm d-none"
+                ></span>
+                <span id="submitButtonText">Create Event</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+    </script>
+    <script src="js/navigation.js"></script>
+    <script src="js/events.js"></script>
+  </body>
+</html>
