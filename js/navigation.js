@@ -17,10 +17,10 @@ class Navigation {
         return 'schedule';
       case 'biometrics.html':
         return 'biometrics';
-      case 'attendance.html':
-        return 'attendance';
       case 'history.html':
         return 'history';
+      case 'events.html':
+        return 'events';
       default:
         return 'staff';
     }
@@ -38,8 +38,8 @@ class Navigation {
             />
           </a>
           <div class="d-flex align-items-center gap-2">
-            <a href="attendance.html" class="btn ${this.currentPage === 'attendance' ? 'btn-light' : 'btn-warning'} btn-sm">
-              Attendance
+            <a href="events.html" class="btn ${this.currentPage === 'events' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Events
             </a>
             <a href="schedule.html" class="btn ${this.currentPage === 'schedule' ? 'btn-light' : 'btn-warning'} btn-sm">
               Schedule
