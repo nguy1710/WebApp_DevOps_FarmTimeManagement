@@ -11,6 +11,8 @@ class Navigation {
     switch(filename) {
       case 'dashboard.html':
         return 'staff';
+      case 'devices.html':
+        return 'devices';
       case 'schedule.html':
         return 'schedule';
       case 'biometrics.html':
@@ -36,20 +38,23 @@ class Navigation {
             />
           </a>
           <div class="d-flex align-items-center gap-2">
-            <a href="dashboard.html" class="btn ${this.currentPage === 'staff' ? 'btn-light' : 'btn-warning'} btn-sm">
-              Staff
+            <a href="attendance.html" class="btn ${this.currentPage === 'attendance' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Attendance
             </a>
             <a href="schedule.html" class="btn ${this.currentPage === 'schedule' ? 'btn-light' : 'btn-warning'} btn-sm">
               Schedule
             </a>
+            <a href="devices.html" class="btn ${this.currentPage === 'devices' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Devices
+            </a>
             <a href="biometrics.html" class="btn ${this.currentPage === 'biometrics' ? 'btn-light' : 'btn-warning'} btn-sm">
               Biometrics
             </a>
-            <a href="attendance.html" class="btn ${this.currentPage === 'attendance' ? 'btn-light' : 'btn-warning'} btn-sm">
-              Attendance
+            <a href="dashboard.html" class="btn ${this.currentPage === 'staff' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Staff
             </a>
             <a href="history.html" class="btn ${this.currentPage === 'history' ? 'btn-light' : 'btn-warning'} btn-sm">
-              History
+              History Log
             </a>
             <span id="userWelcome" class="ms-2 me-2 text-white small"></span>
             <button id="btnLogout" class="btn btn-outline-light btn-sm">
@@ -80,8 +85,8 @@ class Navigation {
     console.log('Navigation init - userData:', userData);
     
     const userWelcome = document.getElementById('userWelcome');
-    if (userWelcome && userData.email) {
-      userWelcome.textContent = `Welcome, ${userData.email}`;
+    if (userWelcome && userData.staff && userData.staff.firstName) {
+      userWelcome.textContent = `Hello ${userData.staff.firstName}`;
     }
 
     // Setup logout functionality
