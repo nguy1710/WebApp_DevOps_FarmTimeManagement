@@ -3,6 +3,15 @@ function authHeader() {
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   const user = JSON.parse(localStorage.getItem("farm_user") || "null");
   const userWelcome = document.getElementById("userWelcome");
@@ -38,7 +47,10 @@ function authHeader() {
         headers: { ...authHeader() },
       });
 
-      if (!res.ok) throw new Error(`Loading failed (HTTP ${res.status}).`);
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
       if (!Array.isArray(data)) throw new Error("Response was not array.");
       staffData = data;
@@ -205,7 +217,10 @@ function authHeader() {
           }
         );
 
-        if (!res.ok) throw new Error(`Failed to delete (HTTP ${res.status}).`);
+        if (!res.ok) {
+          const errorMessage = await getErrorMessage(res);
+          throw new Error(errorMessage);
+        }
         const json = await res.json(); // server returns deleted staff JSON
         alert(
           `Deleted: ${json.FirstName || ""} ${json.LastName || ""} (ID: ${

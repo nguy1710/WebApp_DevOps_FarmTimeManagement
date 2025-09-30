@@ -3,82 +3,102 @@ function authHeader() {
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
 }
 
+async function getErrorMessage(response) {
+  try {
+    const errorData = await response.json();
+    return errorData.message || errorData.error || errorData.detail || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 (function () {
   const user = JSON.parse(localStorage.getItem("farm_user") || "null");
+  const userWelcome = document.getElementById("userWelcome");
+  const btnLogout = document.getElementById("btnLogout");
+  const loadingBox = document.getElementById("loadingBox");
+  const loadError = document.getElementById("loadError");
+  const tableBody = document.getElementById("tableBody");
+  const searchInput = document.getElementById("searchInput");
+
+  // Filter controls
+  const filterRole = document.getElementById("filterRole");
+  const btnClearFilters = document.getElementById("btnClearFilters");
+
+  // Create biometric modal controls
+  const btnSaveBiometric = document.getElementById("btnSaveBiometric");
+  const createBiometricForm = document.getElementById("createBiometricForm");
+  const createStaffId = document.getElementById("createStaffId");
+  const createStaffName = document.getElementById("createStaffName");
+  const biometricType = document.getElementById("biometricType");
+  const biometricData = document.getElementById("biometricData");
+
+  // Edit biometric modal controls
+  const btnUpdateBiometric = document.getElementById("btnUpdateBiometric");
+  const btnDeleteBiometric = document.getElementById("btnDeleteBiometric");
+  const editBiometricForm = document.getElementById("editBiometricForm");
+  const editBiometricId = document.getElementById("editBiometricId");
+  const editStaffId = document.getElementById("editStaffId");
+  const editStaffName = document.getElementById("editStaffName");
+  const editBiometricType = document.getElementById("editBiometricType");
+  const editBiometricData = document.getElementById("editBiometricData");
+
+  // Guard page
   if (!user) {
     window.location.href = "login.html";
     return;
   }
 
-  const userWelcome = document.getElementById("userWelcome");
-  const btnLogout = document.getElementById("btnLogout");
-  const loadingBox = document.getElementById("loadingBox");
-  const loadError = document.getElementById("loadError");
-  const biometricBody = document.getElementById("biometricBody");
-  const searchInput = document.getElementById("searchInput");
+  // Load data
+  let staffData = [];
+  let biometricRecords = [];
 
-  const biometricModal = new bootstrap.Modal(
-    document.getElementById("biometricModal")
-  );
-  const historyModal = new bootstrap.Modal(
-    document.getElementById("historyModal")
-  );
-  const biometricForm = document.getElementById("biometricForm");
-  const biometricModalTitle = document.getElementById("biometricModalTitle");
-  const biometricSpinner = document.getElementById("biometricSpinner");
-
-
-  let allStaff = [];
-  let biometricData = [];
-  let currentBiometricScan = null;
-
-  function safe(val) {
-    return (val ?? "") + "";
-  }
-
-  function formatDateTime(dateStr) {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-AU", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return dateStr || "N/A";
-    }
-  }
-
-  async function loadStaff() {
+  async function fetchStaffs() {
     try {
       const res = await fetch(`${window.API_BASE}/Staffs/`, {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok) throw new Error(`Failed to load staff (HTTP ${res.status})`);
+
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
-      allStaff = Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) throw new Error("Staff response was not array.");
+      staffData = data;
     } catch (err) {
-      console.error("Error loading staff:", err);
+      throw new Error(`Failed to load staff: ${err.message}`);
     }
   }
 
-  async function loadBiometrics() {
+  async function fetchBiometrics() {
     try {
-      const res = await fetch(`${window.API_BASE}/biometrics`, {
+      const res = await fetch(`${window.API_BASE}/Biometrics`, {
         method: "GET",
         headers: { ...authHeader() },
       });
-      if (!res.ok)
-        throw new Error(`Failed to load biometrics (HTTP ${res.status})`);
+
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
       const data = await res.json();
-      biometricData = Array.isArray(data) ? data : [];
-      renderBiometrics();
+      if (!Array.isArray(data)) throw new Error("Biometric response was not array.");
+      biometricRecords = data;
+    } catch (err) {
+      throw new Error(`Failed to load biometrics: ${err.message}`);
+    }
+  }
+
+  async function loadData() {
+    try {
+      await Promise.all([fetchStaffs(), fetchBiometrics()]);
+      renderTable();
+      applyFilters();
     } catch (err) {
       if (loadError) {
-        loadError.textContent = err.message || "Cannot load biometric data";
+        loadError.textContent = err.message || "Cannot download data.";
         loadError.classList.remove("d-none");
       }
     } finally {
@@ -86,59 +106,37 @@ function authHeader() {
     }
   }
 
-  function getBiometricStatus(staffId) {
-    const biometric = biometricData.find((b) => b.StaffId === staffId);
-    if (!biometric) return { status: "Not Registered", class: "text-danger" };
-
-    return biometric.IsActive
-      ? { status: "Active", class: "text-success" }
-      : { status: "Inactive", class: "text-warning" };
-  }
-
-  function renderBiometrics() {
-    if (!biometricBody) return;
-
-    const searchTerm = (searchInput?.value || "").toLowerCase().trim();
-
-    const filteredStaff = allStaff.filter((staff) => {
-      if (!searchTerm) return true;
-      const fullName = `${staff.FirstName} ${staff.LastName}`.toLowerCase();
-      return (
-        fullName.includes(searchTerm) ||
-        (staff.Email || "").toLowerCase().includes(searchTerm) ||
-        (staff.StaffId || "").toString().toLowerCase().includes(searchTerm)
-      );
-    });
-
-    biometricBody.innerHTML = filteredStaff
+  function renderTable(rows = null) {
+    if (!tableBody) return;
+    
+    const dataToRender = rows || staffData;
+    
+    tableBody.innerHTML = dataToRender
       .map((staff) => {
-        const biometric = biometricData.find(
-          (b) => b.StaffId === staff.StaffId
-        );
-        const status = getBiometricStatus(staff.StaffId);
+        const biometric = biometricRecords.find(b => b.StaffId === staff.StaffId);
+        const hasBiometric = !!biometric;
 
         return `
         <tr>
           <td>${safe(staff.StaffId)}</td>
-          <td>${safe(staff.FirstName)} ${safe(staff.LastName)}</td>
-          <td>${safe(staff.Email)}</td>
-          <td><span class="${status.class}">${status.status}</span></td>
-          <td>${biometric ? formatDateTime(biometric.LastUpdated) : "N/A"}</td>
-          <td>${biometric ? biometric.Version || "1" : "N/A"}</td>
-          <td>
-            <button class="btn btn-sm btn-primary me-1 btn-register" 
-                    data-staff-id="${staff.StaffId}"
-                    data-staff-name="${safe(staff.FirstName)} ${safe(
-          staff.LastName
-        )}"
-                    data-has-biometric="${biometric ? "true" : "false"}">
-              ${biometric ? "Re-register" : "Register"}
-            </button>
-            ${
-              biometric
-                ? `<button class="btn btn-sm btn-outline-info btn-history" 
-                                   data-staff-id="${staff.StaffId}">History</button>`
-                : ""
+        <td>${safe(staff.FirstName)}</td>
+        <td>${safe(staff.LastName)}</td>
+        <td>${safe(staff.Role)}</td>
+        <td>
+          ${hasBiometric 
+            ? `<button class="btn btn-primary btn-sm btn-edit" 
+                       data-biometric-id="${safe(biometric.BiometricId)}"
+                       data-staff-id="${safe(staff.StaffId)}" 
+                       data-staff-name="${safe(staff.FirstName)} ${safe(staff.LastName)}"
+                       data-type="${safe(biometric.Type)}"
+                       data-data="${safe(biometric.Data)}">
+                Edit
+              </button>`
+            : `<button class="btn btn-success btn-sm btn-create" 
+                       data-staff-id="${safe(staff.StaffId)}" 
+                       data-staff-name="${safe(staff.FirstName)} ${safe(staff.LastName)}">
+                Create
+              </button>`
             }
           </td>
         </tr>
@@ -147,252 +145,271 @@ function authHeader() {
       .join("");
   }
 
-  function simulateBiometricScan() {
-    return new Promise((resolve) => {
-      const scanAnimation = document.getElementById("scanAnimation");
-      const scanControls = document.getElementById("scanControls");
-      const scanResult = document.getElementById("scanResult");
-      const btnSaveBiometric = document.getElementById("btnSaveBiometric");
+  function safe(val) {
+    return (val ?? "") + "";
+  }
 
-      scanControls.classList.add("d-none");
-      scanAnimation.classList.remove("d-none");
-      scanResult.classList.add("d-none");
+  // Helpers for filters
+  function includesText(haystack, needle) {
+    return (haystack || "")
+      .toString()
+      .toLowerCase()
+      .includes((needle || "").toLowerCase());
+  }
 
-      setTimeout(() => {
-        scanAnimation.classList.add("d-none");
+  // Apply combined filters
+  function applyFilters() {
+    const q = (searchInput?.value || "").trim().toLowerCase();
+    const role = (filterRole?.value || "").trim();
 
-        const quality = Math.floor(Math.random() * 10) + 90;
-        const templateSize = (Math.random() * 2 + 1.5).toFixed(1);
-        const scanTime = (Math.random() * 0.8 + 0.8).toFixed(1);
+    const filtered = staffData.filter((staff) => {
+      // text search across common fields
+      const textOk =
+        !q ||
+        [
+          staff.StaffId,
+          staff.FirstName,
+          staff.LastName,
+          staff.Role,
+        ].some((x) => includesText(x, q));
 
-        document.getElementById("qualityScore").textContent = quality + "%";
-        document.getElementById("templateSize").textContent =
-          templateSize + " KB";
-        document.getElementById("scanTime").textContent = scanTime + "s";
+      // role filter
+      const roleOk = !role || staff.Role === role;
 
-        scanResult.classList.remove("d-none");
-        btnSaveBiometric.disabled = false;
+      return textOk && roleOk;
+    });
 
-        currentBiometricScan = {
-          template: generateMockTemplate(),
-          quality: quality,
-          scanTime: scanTime,
-          templateSize: templateSize,
-        };
+    renderTable(filtered);
+  }
 
-        resolve(currentBiometricScan);
-      }, 2500);
+  // Wire events
+  ["input", "change"].forEach((evt) => {
+    if (searchInput) searchInput.addEventListener(evt, applyFilters);
+    if (filterRole) filterRole.addEventListener(evt, applyFilters);
+  });
+
+  if (btnClearFilters) {
+    btnClearFilters.addEventListener("click", () => {
+      if (searchInput) searchInput.value = "";
+      if (filterRole) filterRole.value = "";
+      applyFilters();
     });
   }
 
-  function generateMockTemplate() {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < 256; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
-  function resetBiometricModal() {
-    const scanAnimation = document.getElementById("scanAnimation");
-    const scanControls = document.getElementById("scanControls");
-    const scanResult = document.getElementById("scanResult");
-    const btnSaveBiometric = document.getElementById("btnSaveBiometric");
-    const reregistrationReason = document.getElementById(
-      "reregistrationReason"
-    );
-    const customReasonDiv = document.getElementById("customReasonDiv");
-
-    scanAnimation.classList.add("d-none");
-    scanControls.classList.remove("d-none");
-    scanResult.classList.add("d-none");
-    reregistrationReason.classList.add("d-none");
-    customReasonDiv.classList.add("d-none");
-    btnSaveBiometric.disabled = true;
-    currentBiometricScan = null;
-
-    biometricForm.classList.remove("was-validated");
-    biometricForm.reset();
-  }
-
-  function openBiometricModal(staffId, staffName, hasExisting = false) {
-    resetBiometricModal();
-
-    document.getElementById("biometricStaffId").value = staffId;
-    document.getElementById("staffNameDisplay").value = staffName;
-    document.getElementById("isReregistration").value = hasExisting
-      ? "true"
-      : "false";
-
-    biometricModalTitle.textContent = hasExisting
-      ? "Re-register Biometric"
-      : "Register Biometric";
-
-    if (hasExisting) {
-      document
-        .getElementById("reregistrationReason")
-        .classList.remove("d-none");
-      document.getElementById("reasonSelect").required = true;
-    } else {
-      document.getElementById("reasonSelect").required = false;
-    }
-
-    biometricModal.show();
-  }
-
-  async function saveBiometric(biometricData) {
-    const res = await fetch(`${window.API_BASE}/biometrics/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
-      body: JSON.stringify(biometricData),
-    });
-
-    if (!res.ok)
-      throw new Error(`Failed to save biometric (HTTP ${res.status})`);
-    return await res.json();
-  }
-
-  async function loadBiometricHistory(staffId) {
-    const historyLoading = document.getElementById("historyLoading");
-    const historyContent = document.getElementById("historyContent");
-    const historyTableBody = document.getElementById("historyTableBody");
-
-    historyLoading.classList.remove("d-none");
-    historyContent.classList.add("d-none");
-
-    try {
-      const res = await fetch(
-        `${window.API_BASE}/biometrics/history/${staffId}`,
-        {
-          method: "GET",
-          headers: { ...authHeader() },
+  // Create and Edit (event delegation)
+  if (tableBody) {
+    tableBody.addEventListener("click", async (e) => {
+      // Handle Create button
+      const createBtn = e.target.closest(".btn-create");
+      if (createBtn) {
+        const staffId = createBtn.getAttribute("data-staff-id");
+        const staffName = createBtn.getAttribute("data-staff-name");
+        
+        if (staffId) {
+          // Populate create form
+          createStaffId.value = staffId;
+          createStaffName.value = staffName;
+          
+          // Show create modal
+          const createModal = new bootstrap.Modal(document.getElementById('createBiometricModal'));
+          createModal.show();
         }
-      );
-
-      if (!res.ok)
-        throw new Error(`Failed to load history (HTTP ${res.status})`);
-      const data = await res.json();
-      const history = Array.isArray(data) ? data : [];
-
-      historyTableBody.innerHTML = history
-        .map(
-          (record) => `
-        <tr>
-          <td>${safe(record.Version)}</td>
-          <td>${formatDateTime(record.CreatedAt)}</td>
-          <td>${safe(record.Action)}</td>
-          <td>${safe(record.Reason || "N/A")}</td>
-          <td>${safe(record.Quality)}%</td>
-        </tr>
-      `
-        )
-        .join("");
-
-      historyLoading.classList.add("d-none");
-      historyContent.classList.remove("d-none");
-    } catch (err) {
-      historyLoading.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-    }
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", renderBiometrics);
-  }
-
-  if (biometricBody) {
-    biometricBody.addEventListener("click", (e) => {
-      if (e.target.classList.contains("btn-register")) {
-        const staffId = e.target.getAttribute("data-staff-id");
-        const staffName = e.target.getAttribute("data-staff-name");
-        const hasExisting =
-          e.target.getAttribute("data-has-biometric") === "true";
-        openBiometricModal(staffId, staffName, hasExisting);
-      } else if (e.target.classList.contains("btn-history")) {
-        const staffId = e.target.getAttribute("data-staff-id");
-        loadBiometricHistory(staffId);
-        historyModal.show();
-      }
-    });
-  }
-
-  document.getElementById("btnStartScan").addEventListener("click", () => {
-    simulateBiometricScan();
-  });
-
-  document.getElementById("reasonSelect").addEventListener("change", (e) => {
-    const customReasonDiv = document.getElementById("customReasonDiv");
-    const customReason = document.getElementById("customReason");
-
-    if (e.target.value === "other") {
-      customReasonDiv.classList.remove("d-none");
-      customReason.required = true;
-    } else {
-      customReasonDiv.classList.add("d-none");
-      customReason.required = false;
-      customReason.value = "";
-    }
-  });
-
-  if (biometricForm) {
-    biometricForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      if (!biometricForm.checkValidity() || !currentBiometricScan) {
-        biometricForm.classList.add("was-validated");
         return;
       }
 
-      const isReregistration =
-        document.getElementById("isReregistration").value === "true";
-      const reasonSelect = document.getElementById("reasonSelect");
-      const customReason = document.getElementById("customReason");
-
-      let reason = null;
-      if (isReregistration) {
-        reason =
-          reasonSelect.value === "other"
-            ? customReason.value
-            : reasonSelect.value;
-        if (!reason) {
-          biometricForm.classList.add("was-validated");
-          return;
+      // Handle Edit button
+      const editBtn = e.target.closest(".btn-edit");
+      if (editBtn) {
+        const biometricId = editBtn.getAttribute("data-biometric-id");
+        const staffId = editBtn.getAttribute("data-staff-id");
+        const staffName = editBtn.getAttribute("data-staff-name");
+        const type = editBtn.getAttribute("data-type");
+        const data = editBtn.getAttribute("data-data");
+        
+        if (biometricId) {
+          // Populate edit form
+          editBiometricId.value = biometricId;
+          editStaffId.value = staffId;
+          editStaffName.value = staffName;
+          editBiometricType.value = type;
+          editBiometricData.value = data;
+          
+          // Show edit modal
+          const editModal = new bootstrap.Modal(document.getElementById('editBiometricModal'));
+          editModal.show();
         }
-      }
-
-      const biometricData = {
-        StaffId: document.getElementById("biometricStaffId").value,
-        BiometricTemplate: currentBiometricScan.template,
-        Quality: currentBiometricScan.quality,
-        IsReregistration: isReregistration,
-        Reason: reason,
-        DeviceInfo: {
-          deviceType: "MockBiometricDevice",
-          version: "1.0.0",
-          scanTime: currentBiometricScan.scanTime,
-          templateSize: currentBiometricScan.templateSize,
-        },
-      };
-
-      try {
-        biometricSpinner.classList.remove("d-none");
-        await saveBiometric(biometricData);
-        biometricModal.hide();
-        await loadBiometrics();
-        alert("Biometric registration completed successfully!");
-      } catch (err) {
-        alert(err.message || "Failed to save biometric data");
-      } finally {
-        biometricSpinner.classList.add("d-none");
+        return;
       }
     });
   }
 
-  async function init() {
-    await loadStaff();
-    await loadBiometrics();
+  // Create biometric functionality
+  async function createBiometric() {
+    if (!createBiometricForm.checkValidity()) {
+      createBiometricForm.reportValidity();
+      return;
+    }
+
+    const newBiometric = {
+      StaffId: parseInt(createStaffId.value),
+      Type: biometricType.value,
+      Data: biometricData.value.trim()
+    };
+
+    try {
+      btnSaveBiometric.disabled = true;
+      btnSaveBiometric.textContent = "Creating...";
+
+      const res = await fetch(`${window.API_BASE}/Biometrics`, {
+      method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader()
+        },
+        body: JSON.stringify(newBiometric)
+    });
+
+    if (!res.ok) {
+      const errorMessage = await getErrorMessage(res);
+      throw new Error(errorMessage);
+    }
+
+      const createdBiometric = await res.json();
+      alert(`Biometric data created successfully! ID: ${createdBiometric.BiometricId}`);
+      
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('createBiometricModal'));
+      modal.hide();
+      createBiometricForm.reset();
+      
+      // Refresh data
+      await loadData();
+    } catch (err) {
+      alert(err.message || "Cannot create biometric data.");
+    } finally {
+      btnSaveBiometric.disabled = false;
+      btnSaveBiometric.textContent = "Create Biometric";
+    }
   }
 
-  init();
+  // Update biometric functionality
+  async function updateBiometric() {
+    if (!editBiometricForm.checkValidity()) {
+      editBiometricForm.reportValidity();
+      return;
+    }
+
+    const biometricId = editBiometricId.value;
+    const updatedBiometric = {
+      StaffId: parseInt(editStaffId.value),
+      Type: editBiometricType.value,
+      Data: editBiometricData.value.trim()
+    };
+
+    try {
+      btnUpdateBiometric.disabled = true;
+      btnUpdateBiometric.textContent = "Updating...";
+
+      const res = await fetch(`${window.API_BASE}/Biometrics/${encodeURIComponent(biometricId)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader()
+        },
+        body: JSON.stringify(updatedBiometric)
+      });
+
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
+
+      const updatedBiometricData = await res.json();
+      alert(`Biometric data updated successfully! ID: ${updatedBiometricData.BiometricId}`);
+      
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('editBiometricModal'));
+      modal.hide();
+      editBiometricForm.reset();
+      
+      // Refresh data
+      await loadData();
+    } catch (err) {
+      alert(err.message || "Cannot update biometric data.");
+    } finally {
+      btnUpdateBiometric.disabled = false;
+      btnUpdateBiometric.textContent = "Update Biometric";
+    }
+  }
+
+  // Delete biometric functionality
+  async function deleteBiometric() {
+    const biometricId = editBiometricId.value;
+    const staffName = editStaffName.value;
+    
+    if (!biometricId) return;
+    
+    const ok = confirm(`Are you sure you want to delete biometric data for ${staffName}?`);
+    if (!ok) return;
+
+    try {
+      btnDeleteBiometric.disabled = true;
+      btnDeleteBiometric.textContent = "Deleting...";
+
+      const res = await fetch(`${window.API_BASE}/Biometrics/${encodeURIComponent(biometricId)}`, {
+        method: "DELETE",
+        headers: { ...authHeader() },
+      });
+
+      if (!res.ok) {
+        const errorMessage = await getErrorMessage(res);
+        throw new Error(errorMessage);
+      }
+
+      alert(`Biometric data deleted successfully for ${staffName}!`);
+      
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('editBiometricModal'));
+      modal.hide();
+      editBiometricForm.reset();
+      
+      // Refresh data
+      await loadData();
+    } catch (err) {
+      alert(err.message || "Cannot delete biometric data.");
+    } finally {
+      btnDeleteBiometric.disabled = false;
+      btnDeleteBiometric.textContent = "Delete Biometric";
+    }
+  }
+
+  // Wire events
+  if (btnSaveBiometric) {
+    btnSaveBiometric.addEventListener("click", createBiometric);
+  }
+
+  if (btnUpdateBiometric) {
+    btnUpdateBiometric.addEventListener("click", updateBiometric);
+  }
+
+  if (btnDeleteBiometric) {
+    btnDeleteBiometric.addEventListener("click", deleteBiometric);
+  }
+
+  // Reset forms when modals are hidden
+  const createBiometricModal = document.getElementById('createBiometricModal');
+  if (createBiometricModal) {
+    createBiometricModal.addEventListener('hidden.bs.modal', function () {
+      createBiometricForm.reset();
+    });
+  }
+
+  const editBiometricModal = document.getElementById('editBiometricModal');
+  if (editBiometricModal) {
+    editBiometricModal.addEventListener('hidden.bs.modal', function () {
+      editBiometricForm.reset();
+    });
+  }
+
+  loadData();
 })();
