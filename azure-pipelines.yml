@@ -1,0 +1,78 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'windows-latest'   # Cần Windows cho MSDeploy/PublishProfile
+
+variables:
+  buildConfiguration: 'Release'
+  # ĐƯỜNG DẪN TỚI WEB APP .csproj — HÃY SỬA CHO ĐÚNG
+  projectPath: '**/*.csproj'
+  # MSDeploy package output (khác zip thường)
+  packagePath: '$(Build.ArtifactStagingDirectory)/WebApp.zip'
+
+steps:
+  # 1) .NET 8 SDK
+  - task: UseDotNet@2
+    displayName: 'Use .NET 8 SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  # 2) Restore
+  - task: DotNetCoreCLI@2
+    displayName: 'Restore'
+    inputs:
+      command: 'restore'
+      projects: '$(projectPath)'
+
+  # 3) Đóng gói MSDeploy package (bắt buộc khi dùng Publish Profile)
+  - task: MSBuild@1
+    displayName: 'Package Web Deploy (MSDeploy)'
+    inputs:
+      solution: '$(projectPath)'          # Nên trỏ chính xác tới WebApp .csproj
+      msbuildArchitecture: 'x64'
+      configuration: '$(buildConfiguration)'
+      msbuildArguments: >
+        /p:DeployOnBuild=true
+        /p:WebPublishMethod=Package
+        /p:PackageAsSingleFile=true
+        /p:SkipInvalidConfigurations=true
+        /p:PackageLocation="$(packagePath)"
+
+  # 4) Tải publish profile cho adelaidefarm (Secure files)
+  - task: DownloadSecureFile@1
+    name: fetchProfile
+    displayName: 'Download publish profile (adelaidefarm)'
+    inputs:
+      secureFile: 'adelaidefarm.PublishSettings'   # đúng TÊN file bạn đã upload
+
+  # 5) Lọc đúng profile MSDeploy + lấy password
+  - powershell: |
+      [xml]$xml = Get-Content '$(fetchProfile.secureFilePath)'
+      $ms = $xml.publishData.publishProfile | Where-Object { $_.publishMethod -eq 'MSDeploy' } | Select-Object -First 1
+      if (-not $ms) { throw "Không tìm thấy publishProfile có publishMethod='MSDeploy' trong .PublishSettings." }
+      $pwd = $ms.userPWD
+      if ([string]::IsNullOrWhiteSpace($pwd)) { throw "MSDeploy profile không có userPWD. Hãy bật Basic Auth và tải lại profile." }
+
+      # Lưu password vào biến bí mật
+      Write-Host "##vso[task.setvariable variable=publishProfilePassword;issecret=true]$pwd"
+
+      # Tạo file PublishSettings chỉ chứa đúng MSDeploy profile
+      $new = New-Object System.Xml.XmlDocument
+      $decl = $new.CreateXmlDeclaration("1.0","utf-8",$null); $new.AppendChild($decl) | Out-Null
+      $root = $new.CreateElement("publishData"); $new.AppendChild($root) | Out-Null
+      $imported = $new.ImportNode($ms, $true); $root.AppendChild($imported) | Out-Null
+      $outPath = "$(Build.SourcesDirectory)\msdeploy.PublishSettings"
+      $new.Save($outPath)
+      Write-Host "##vso[task.setvariable variable=msdeployProfilePath]$outPath"
+    displayName: 'Filter MSDeploy profile & extract password'
+
+  # 6) Deploy lên App Service adelaidefarm bằng Publish Profile (webDeploy)
+  - task: AzureRmWebAppDeployment@5
+    displayName: 'Deploy to Azure App Service (adelaidefarm)'
+    inputs:
+      ConnectionType: 'PublishProfile'
+      PublishProfilePath: '$(msdeployProfilePath)'
+      PublishProfilePassword: '$(publishProfilePassword)'
+      Package: '$(packagePath)'
