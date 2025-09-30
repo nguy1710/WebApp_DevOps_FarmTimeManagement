@@ -1,5 +1,5 @@
 {
     "appService.defaultWebAppToDeploy": "/subscriptions/d86934ac-4b34-4ac2-b8c8-0b13e578d828/resourceGroups/Resourcegroup_Flinders/providers/Microsoft.Web/sites/adelaidefarm",
     "appService.deploySubpath": ".",
-    "liveServer.settings.port": 5504
+    "liveServer.settings.port": 5503
 }
