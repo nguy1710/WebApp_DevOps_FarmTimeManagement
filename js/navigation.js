@@ -21,6 +21,10 @@ class Navigation {
         return 'history';
       case 'events.html':
         return 'events';
+      case 'payroll.html':
+        return 'payroll';
+      case 'payrates.html':
+        return 'payrates';
       default:
         return 'staff';
     }
@@ -38,6 +42,12 @@ class Navigation {
             />
           </a>
           <div class="d-flex align-items-center gap-2">
+            <a href="payroll.html" class="btn ${this.currentPage === 'payroll' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Payroll
+            </a>
+            <a href="payrates.html" class="btn ${this.currentPage === 'payrates' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Pay Rates
+            </a>
             <a href="events.html" class="btn ${this.currentPage === 'events' ? 'btn-light' : 'btn-warning'} btn-sm">
               Events
             </a>
