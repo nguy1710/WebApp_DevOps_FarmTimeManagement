@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payroll - Farm Time Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="navigation-container"></div>
+
+    <div class="container py-4">
+      <h2 class="mb-3">Payroll Calculator</h2>
+
+      <div id="loadError" class="alert alert-danger d-none"></div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <form id="payrollForm" class="row g-3">
+            <div class="col-md-3">
+              <label for="staffId" class="form-label">Staff ID</label>
+              <input
+                type="number"
+                id="staffId"
+                class="form-control"
+                min="1"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <label for="mondayDate" class="form-label"
+                >Monday Date (yyyy-MM-dd)</label
+              >
+              <input
+                type="date"
+                id="mondayDate"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="isSpecialPayRate"
+                />
+                <label class="form-check-label" for="isSpecialPayRate">
+                  Use Award Rates
+                </label>
+              </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button
+                id="btnCalculate"
+                type="submit"
+                class="btn btn-primary w-100"
+              >
+                Calculate
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="loadingBox" class="alert alert-info d-none">Calculating...</div>
+
+      <div id="resultBox" class="card d-none">
+        <div class="card-body">
+          <h5 id="staffName" class="card-title mb-3"></h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <h6 class="mb-2">Hours</h6>
+                <div>
+                  <strong>Total Hours:</strong> <span id="totalHours">-</span>
+                </div>
+                <div>
+                  <strong>Week Start:</strong> <span id="weekStart">-</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <h6 class="mb-2">Pay</h6>
+                <div><strong>Gross:</strong> $<span id="grossPay">-</span></div>
+                <div>
+                  <strong>PAYG:</strong> $<span id="weeklyPAYG">-</span>
+                </div>
+                <div><strong>Net:</strong> $<span id="netPay">-</span></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="border rounded p-3 h-100">
+                <h6 class="mb-2">Other</h6>
+                <div>
+                  <strong>Annual Income:</strong> $<span id="annualIncome"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <strong>Annual Tax:</strong> $<span id="annualTax">-</span>
+                </div>
+                <div>
+                  <strong>Super (11.5%):</strong> $<span id="super">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 small text-muted">
+        Tip: Monday dates for testing include 2024-12-30, 2025-01-06,
+        2025-01-13.
+      </div>
+    </div>
+
+    <script>
+      window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+    </script>
+    <script src="js/navigation.js"></script>
+    <script src="js/payroll.js"></script>
+  </body>
+</html>

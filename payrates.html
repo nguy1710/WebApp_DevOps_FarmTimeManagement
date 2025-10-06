@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pay Rates - Farm Time Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="navigation-container"></div>
+
+    <div class="container py-4">
+      <h2 class="mb-3">Pay Rate Management</h2>
+
+      <div id="loadError" class="alert alert-danger d-none"></div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex gap-2 flex-wrap">
+          <button id="btnLoadDefaults" class="btn btn-secondary">
+            Load Default Award Rates
+          </button>
+          <button id="btnInitAll" class="btn btn-warning">
+            Initialize All Defaults (Admin)
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Staff ID (Individual Update)</label>
+          <input
+            type="number"
+            id="staffId"
+            class="form-control"
+            min="1"
+            placeholder="e.g. 1"
+          />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Standard Rate ($/hr)</label>
+          <input
+            type="number"
+            id="stdRate"
+            class="form-control"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Overtime Rate ($/hr)</label>
+          <input
+            type="number"
+            id="otRate"
+            class="form-control"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button id="btnUpdateStaff" class="btn btn-primary w-100">
+            Update Staff Pay Rate
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Role (Bulk)</label>
+          <select id="bulkRole" class="form-select">
+            <option value="">Select role</option>
+            <option>Worker</option>
+            <option>Manager</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Contract Type (Bulk)</label>
+          <select id="bulkContract" class="form-select">
+            <option value="">Select contract</option>
+            <option>Full-time</option>
+            <option>Part-time</option>
+            <option>Casual</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Standard Rate ($/hr)</label>
+          <input
+            type="number"
+            id="bulkStdRate"
+            class="form-control"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Overtime Rate ($/hr)</label>
+          <input
+            type="number"
+            id="bulkOtRate"
+            class="form-control"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button id="btnBulkUpdate" class="btn btn-success">
+            Bulk Update (Admin)
+          </button>
+        </div>
+      </div>
+
+      <div id="loadingBox" class="alert alert-info d-none">Processing...</div>
+
+      <div class="card d-none" id="defaultsCard">
+        <div class="card-header">Default Award Rates</div>
+        <div class="card-body">
+          <pre
+            id="defaultsJson"
+            class="mb-0"
+            style="white-space: pre-wrap"
+          ></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+    </script>
+    <script src="js/navigation.js"></script>
+    <script src="js/payrates.js"></script>
+  </body>
+</html>
