@@ -1,3 +1,28 @@
+// ============================================================================
+// TIMEZONE HANDLING STRATEGY FOR SCHEDULES
+// ============================================================================
+// Backend (C# SQL Server) stores timestamps as DATETIME2(0) without timezone info.
+// All timestamps are treated as LOCAL TIME (Adelaide time).
+//
+// IMPORTANT: Do NOT use .toISOString() as it converts to UTC!
+//
+// When SENDING to backend (POST/PUT /api/roster):
+//   - Format: 'YYYY-MM-DD HH:MM:SS' (e.g., '2024-12-30 08:00:00')
+//   - This is local Adelaide time, no timezone conversion
+//
+// When RECEIVING from backend (GET /api/roster):
+//   - Backend returns: "2024-12-30T08:00:00" or "2024-12-30 08:00:00"
+//   - Parse as local time (no 'Z' suffix, no timezone offset)
+//   - Display as-is without conversion
+//
+// Example:
+//   User selects: 8:00 AM - 4:00 PM on 2024-12-30
+//   Send to API:  StartTime: '2024-12-30 08:00:00', EndTime: '2024-12-30 16:00:00'
+//   Store in DB:  StartTime: 2024-12-30 08:00:00, EndTime: 2024-12-30 16:00:00
+//   Return from API: "2024-12-30T08:00:00"
+//   Display to user: 8:00 AM - 4:00 PM
+// ============================================================================
+
 function authHeader() {
   const u = JSON.parse(localStorage.getItem("farm_user") || "null");
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
@@ -47,11 +72,19 @@ async function getErrorMessage(response) {
     const d = new Date(date);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(d.setDate(diff));
+    d.setDate(diff);
+    // IMPORTANT: Reset time to start of day (00:00:00) to include all shifts on Monday
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
 
   function formatDate(date) {
-    return date.toISOString().split("T")[0];
+    // IMPORTANT: Format date as local YYYY-MM-DD without timezone conversion
+    // Do NOT use toISOString() as it converts to UTC!
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   function formatDisplayDate(date) {
@@ -142,6 +175,9 @@ async function getErrorMessage(response) {
     try {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999); // End of day
+
+      console.log('Loading schedules for week:', formatDate(currentWeekStart), 'to', formatDate(weekEnd));
 
       const res = await fetch(
         `${window.API_BASE}/Roster`,
@@ -150,30 +186,92 @@ async function getErrorMessage(response) {
           headers: { ...authHeader() },
         }
       );
+      
       if (!res.ok) {
         const errorMessage = await getErrorMessage(res);
         throw new Error(errorMessage);
       }
+      
       const data = await res.json();
+      console.log('Loaded schedules from API:', data.length, 'records');
+      
       const schedules = Array.isArray(data) ? data : [];
 
-      // Filter schedules for current week and map to shift format for compatibility
+      // Parse timestamps as local time (no timezone conversion)
+      // Backend returns: "2024-12-30T08:00:00" - treat as local time
       allShifts = schedules
         .filter(schedule => {
-          const scheduleDate = new Date(schedule.StartTime);
+          // Parse timestamp as local time by replacing 'T' with space
+          const startTimeStr = schedule.StartTime.toString().replace('T', ' ');
+          const scheduleDate = new Date(startTimeStr);
+          
+          // Debug: Log first schedule to verify parsing
+          if (schedules.indexOf(schedule) === 0) {
+            console.log('Sample schedule:', {
+              raw: schedule.StartTime,
+              parsed: startTimeStr,
+              date: scheduleDate,
+              weekStart: currentWeekStart,
+              weekEnd: weekEnd
+            });
+          }
+          
+          // Filter: schedule date must be within current week (inclusive)
           return scheduleDate >= currentWeekStart && scheduleDate <= weekEnd;
         })
-        .map(schedule => ({
-          ShiftId: schedule.ScheduleId,
-          StaffId: schedule.StaffId,
-          ShiftDate: schedule.StartTime.split('T')[0],
-          StartTime: schedule.StartTime.split('T')[1].substring(0, 8),
-          EndTime: schedule.EndTime.split('T')[1].substring(0, 8),
-          Notes: ""
-        }));
+        .map(schedule => {
+          // Extract date and time without timezone conversion
+          let startTimeStr = schedule.StartTime.toString();
+          let endTimeStr = schedule.EndTime.toString();
+          
+          // Remove 'T' separator if present
+          startTimeStr = startTimeStr.replace('T', ' ');
+          endTimeStr = endTimeStr.replace('T', ' ');
+          
+          // Extract date part (YYYY-MM-DD)
+          const shiftDate = startTimeStr.split(' ')[0];
+          
+          // Extract time part (HH:MM:SS)
+          const startTime = startTimeStr.split(' ')[1] || '00:00:00';
+          const endTime = endTimeStr.split(' ')[1] || '00:00:00';
 
+          return {
+            ShiftId: schedule.ScheduleId,
+            StaffId: schedule.StaffId,
+            ShiftDate: shiftDate,
+            StartTime: startTime,
+            EndTime: endTime,
+            Notes: schedule.Notes || ""
+          };
+        });
+
+      console.log('Filtered shifts for current week:', allShifts.length);
+      
+      // Debug: Log first few shifts with exact format
+      if (allShifts.length > 0) {
+        console.log('Sample shifts (first 3):', allShifts.slice(0, 3).map(s => ({
+          ShiftId: s.ShiftId,
+          StaffId: s.StaffId,
+          ShiftDate: s.ShiftDate,
+          StartTime: s.StartTime,
+          EndTime: s.EndTime
+        })));
+        
+        const shiftsByDay = {};
+        allShifts.forEach(shift => {
+          // Parse as local date (avoid timezone issues)
+          const dateStr = shift.ShiftDate.replace('T', ' ').split(' ')[0];
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const localDate = new Date(year, month - 1, day);
+          const dayName = localDate.toLocaleDateString('en-US', { weekday: 'long' });
+          shiftsByDay[dayName] = (shiftsByDay[dayName] || 0) + 1;
+        });
+        console.log('Shifts by day:', shiftsByDay);
+      }
+      
       renderSchedule();
     } catch (err) {
+      console.error('Error loading shifts:', err);
       if (loadError) {
         loadError.textContent = err.message || "Cannot load shifts";
         loadError.classList.remove("d-none");
@@ -185,9 +283,21 @@ async function getErrorMessage(response) {
 
   function getShiftsForStaffAndDate(staffId, date) {
     const dateStr = formatDate(date);
-    return allShifts.filter(
+    const matchedShifts = allShifts.filter(
       (shift) => shift.StaffId === staffId && shift.ShiftDate === dateStr
     );
+    
+    // Debug log for Monday only (day 1 of week)
+    if (date.getDay() === 1 && allShifts.length > 0) {
+      console.log('Looking for Monday shifts:', {
+        staffId: staffId,
+        lookingForDate: dateStr,
+        availableShiftDates: allShifts.map(s => ({ date: s.ShiftDate, staffId: s.StaffId })),
+        foundShifts: matchedShifts.length
+      });
+    }
+    
+    return matchedShifts;
   }
 
   function renderSchedule() {
@@ -275,12 +385,15 @@ async function getErrorMessage(response) {
       : `${window.API_BASE}/Roster/assign`;
 
     // Convert shift data to roster format
+    // IMPORTANT: Send local time WITHOUT timezone conversion
+    // Format: 'YYYY-MM-DD HH:MM:SS' (e.g., '2024-12-30 08:00:00')
     const rosterData = {
       StaffId: parseInt(shiftData.StaffId),
-      StartTime: `${shiftData.ShiftDate}T${shiftData.StartTime}`,
-      EndTime: `${shiftData.ShiftDate}T${shiftData.EndTime}`,
-      Notes: ""
+      StartTime: `${shiftData.ShiftDate} ${shiftData.StartTime}`, // Local time format
+      EndTime: `${shiftData.ShiftDate} ${shiftData.EndTime}` // Local time format
     };
+
+    console.log('Saving schedule with local time:', rosterData);
 
     const res = await fetch(url, {
       method,
@@ -306,6 +419,8 @@ async function getErrorMessage(response) {
     }
   }
 
+  // Open shift modal for add/edit
+  // Default shift time: 9:00 AM - 5:00 PM (09:00 - 17:00)
   function openShiftModal(shiftData = null) {
     const form = shiftForm;
     form.classList.remove("was-validated");
@@ -326,8 +441,9 @@ async function getErrorMessage(response) {
 
       document.getElementById("shiftId").value = shiftData.ShiftId || "";
       document.getElementById("shiftDate").value = shiftData.ShiftDate || "";
-      document.getElementById("shiftStartTime").value = shiftData.StartTime || "";
-      document.getElementById("shiftEndTime").value = shiftData.EndTime || "";
+      // Set default times: 9:00 AM - 5:00 PM if not provided
+      document.getElementById("shiftStartTime").value = shiftData.StartTime || "09:00";
+      document.getElementById("shiftEndTime").value = shiftData.EndTime || "17:00";
 
       if (isStaffLocked || isEditMode) {
         // Lock staff selection for both edit mode and when adding to specific person
@@ -362,6 +478,10 @@ async function getErrorMessage(response) {
       shiftModalTitle.textContent = "Add Shift";
       form.reset();
       document.getElementById("shiftId").value = "";
+      
+      // Set default times: 9:00 AM - 5:00 PM for new shifts
+      document.getElementById("shiftStartTime").value = "09:00";
+      document.getElementById("shiftEndTime").value = "17:00";
 
       // Show dropdown for general add shift
       staffSelect.style.display = 'block';

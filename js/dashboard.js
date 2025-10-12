@@ -24,12 +24,8 @@ async function getErrorMessage(response) {
   // New filter controls
   const filterRole = document.getElementById("filterRole");
   const filterContract = document.getElementById("filterContract");
-  const minStdHours = document.getElementById("minStdHours");
-  const maxStdHours = document.getElementById("maxStdHours");
   const minStdPay = document.getElementById("minStdPay");
   const maxStdPay = document.getElementById("maxStdPay");
-  const minOvertime = document.getElementById("minOvertime");
-  const maxOvertime = document.getElementById("maxOvertime");
   const btnClearFilters = document.getElementById("btnClearFilters");
 
   // Guard page
@@ -81,9 +77,7 @@ async function getErrorMessage(response) {
         <td>${safe(r.Address)}</td>
         <td>${safe(r.ContractType)}</td>
         <td>${safe(r.Role)}</td>
-        <td>${safe(r.StandardHoursPerWeek)}</td>
         <td>${safe(r.StandardPayRate)}</td>
-        <td>${safe(r.OvertimePayRate)}</td>
         <td>
           <a href="edit-staff.html?id=${encodeURIComponent(r.StaffId)}" 
              class="text-primary text-decoration-none me-2">Edit</a>
@@ -122,12 +116,8 @@ async function getErrorMessage(response) {
     const role = (filterRole?.value || "").trim();
     const contract = (filterContract?.value || "").trim();
 
-    const minH = toNum(minStdHours?.value);
-    const maxH = toNum(maxStdHours?.value);
     const minP = toNum(minStdPay?.value);
     const maxP = toNum(maxStdPay?.value);
-    const minO = toNum(minOvertime?.value);
-    const maxO = toNum(maxOvertime?.value);
 
     const filtered = staffData.filter((s) => {
       // text search across common fields
@@ -148,23 +138,13 @@ async function getErrorMessage(response) {
       const contractOk = !contract || s.ContractType === contract;
 
       // numeric ranges (null/undefined treated as missing; must meet bounds if provided)
-      const h = parseFloat(s.StandardHoursPerWeek ?? "");
       const p = parseFloat(s.StandardPayRate ?? "");
-      const o = parseFloat(s.OvertimePayRate ?? "");
-
-      const hoursOk =
-        (minH == null || (Number.isFinite(h) && h >= minH)) &&
-        (maxH == null || (Number.isFinite(h) && h <= maxH));
 
       const payOk =
         (minP == null || (Number.isFinite(p) && p >= minP)) &&
         (maxP == null || (Number.isFinite(p) && p <= maxP));
 
-      const overtimeOk =
-        (minO == null || (Number.isFinite(o) && o >= minO)) &&
-        (maxO == null || (Number.isFinite(o) && o <= maxO));
-
-      return textOk && roleOk && contractOk && hoursOk && payOk && overtimeOk;
+      return textOk && roleOk && contractOk && payOk;
     });
 
     renderTable(filtered);
@@ -175,12 +155,8 @@ async function getErrorMessage(response) {
     if (searchInput) searchInput.addEventListener(evt, applyFilters);
     if (filterRole) filterRole.addEventListener(evt, applyFilters);
     if (filterContract) filterContract.addEventListener(evt, applyFilters);
-    if (minStdHours) minStdHours.addEventListener(evt, applyFilters);
-    if (maxStdHours) maxStdHours.addEventListener(evt, applyFilters);
     if (minStdPay) minStdPay.addEventListener(evt, applyFilters);
     if (maxStdPay) maxStdPay.addEventListener(evt, applyFilters);
-    if (minOvertime) minOvertime.addEventListener(evt, applyFilters);
-    if (maxOvertime) maxOvertime.addEventListener(evt, applyFilters);
   });
 
   if (btnClearFilters) {
@@ -188,12 +164,8 @@ async function getErrorMessage(response) {
       if (searchInput) searchInput.value = "";
       if (filterRole) filterRole.value = "";
       if (filterContract) filterContract.value = "";
-      if (minStdHours) minStdHours.value = "";
-      if (maxStdHours) maxStdHours.value = "";
       if (minStdPay) minStdPay.value = "";
       if (maxStdPay) maxStdPay.value = "";
-      if (minOvertime) minOvertime.value = "";
-      if (maxOvertime) maxOvertime.value = "";
       applyFilters();
     });
   }

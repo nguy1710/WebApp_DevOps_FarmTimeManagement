@@ -39,9 +39,18 @@
                 <option value="">-- Select Staff --</option>
               </select>
             </div>
+            <!-- =================================================================
+            Feature Update: Allow any date selection for payroll calculation
+            Developer: Tim
+            Date: 2025-10-12
+            Description: Changed label from "Monday Date" to "Select Date" to allow users
+                         to pick any date. The system will calculate payroll for the entire
+                         week containing the selected date.
+            Issue: Users should be able to select any day in the week, not just Monday
+            ================================================================= -->
             <div class="col-md-4">
               <label for="mondayDate" class="form-label"
-                >Monday Date (yyyy-MM-dd)</label
+                >Select Date (any day in the week)</label
               >
               <input
                 type="date"
@@ -139,8 +148,8 @@
       </div>
 
       <div class="mt-3 small text-muted">
-        Tip: Monday dates for testing include 2024-12-30, 2025-01-06,
-        2025-01-13.
+        Tip: Select any date and the system will calculate payroll for that entire week. 
+        Test dates include: 2024-12-30, 2025-01-06, 2025-01-13 (or any day in those weeks).
       </div>
     </div>
 

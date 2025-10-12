@@ -52,7 +52,7 @@ function isValidPhoneNumber(phone) {
     function pascalToCamel(p){ return {
       firstName:p.FirstName, lastName:p.LastName, email:p.Email, phone:p.Phone,
       address:p.Address, contractType:p.ContractType, role:p.Role,
-      standardHoursPerWeek:p.StandardHoursPerWeek, standardPayRate:p.StandardPayRate, overtimePayRate:p.OvertimePayRate
+      standardPayRate:p.StandardPayRate
     };}
 
     // ---- GET /Staffs/{id} and fill form ----
@@ -77,9 +77,7 @@ function isValidPhoneNumber(phone) {
         const Address   = s.Address   ?? s.address   ?? '';
         const ContractType = s.ContractType ?? s.contractType ?? '';
         const Role = s.Role ?? s.role ?? '';
-        const StandardHoursPerWeek = s.StandardHoursPerWeek ?? s.standardHoursPerWeek ?? '';
         const StandardPayRate      = s.StandardPayRate      ?? s.standardPayRate      ?? '';
-        const OvertimePayRate      = s.OvertimePayRate      ?? s.overtimePayRate      ?? '';
 
         setVal('StaffId', StaffId);
         setVal('FirstName', FirstName);
@@ -89,9 +87,7 @@ function isValidPhoneNumber(phone) {
         setVal('Address', Address);
         setVal('ContractType', ContractType);
         setSelectValue('Role', Role);
-        setVal('StandardHoursPerWeek', StandardHoursPerWeek);
         setVal('StandardPayRate', StandardPayRate);
-        setVal('OvertimePayRate', OvertimePayRate);
       } catch (err) {
         console.error(err);
         alert(err.message || 'Cannot load Staff.');
@@ -128,9 +124,7 @@ function isValidPhoneNumber(phone) {
         Address: val('Address') || null,
         ContractType: val('ContractType') || null,
         Role: val('Role'),
-        StandardHoursPerWeek: num('StandardHoursPerWeek'),
-        StandardPayRate: num('StandardPayRate'),
-        OvertimePayRate: num('OvertimePayRate')
+        StandardPayRate: num('StandardPayRate')
       };
       const payload = Object.assign({}, pas, pascalToCamel(pas));
 

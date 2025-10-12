@@ -97,6 +97,7 @@
                 />
                 <div class="invalid-feedback">Please select date.</div>
               </div>
+              <!-- Default shift hours: 9:00 AM - 5:00 PM (set via JS) -->
               <div class="row g-2">
                 <div class="col-6">
                   <label class="form-label">Start Time *</label>
@@ -148,6 +149,24 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+      
+      // ===================================================================
+      // Roster (Schedule) API Information:
+      // GET /api/roster - Get all work schedules
+      // GET /api/roster/{id} - Get schedule by ID
+      // GET /api/roster/staff/{staffId} - Get schedules for specific staff
+      // POST /api/roster/assign - Assign new shift
+      // PUT /api/roster/{id} - Update existing schedule
+      // DELETE /api/roster/{id} - Delete schedule
+      // 
+      // WorkSchedule Model (C#):
+      //   ScheduleId (int), StaffId (int), 
+      //   StartTime (DateTime), EndTime (DateTime), Hours (decimal)
+      //
+      // TIMEZONE: All timestamps are LOCAL TIME (no timezone conversion)
+      // Format: 'YYYY-MM-DD HH:MM:SS' when sending
+      // Receives: "YYYY-MM-DDTHH:MM:SS" (treat as local time)
+      // ===================================================================
     </script>
     <script src="js/navigation.js"></script>
     <script src="js/schedule.js"></script>

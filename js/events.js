@@ -1,3 +1,28 @@
+// ============================================================================
+// TIMEZONE HANDLING STRATEGY
+// ============================================================================
+// Backend (C# SQL Server) stores timestamps as DATETIME2(0) without timezone info.
+// All timestamps are treated as LOCAL TIME (Adelaide time).
+//
+// IMPORTANT: Do NOT use .toISOString() as it converts to UTC!
+//
+// When SENDING to backend:
+//   - Format: 'YYYY-MM-DD HH:MM:SS' (e.g., '2024-12-30 21:23:00')
+//   - This is local Adelaide time, no timezone conversion
+//
+// When RECEIVING from backend:
+//   - Backend returns: "2024-12-30T21:23:00" or "2024-12-30 21:23:00"
+//   - Parse as local time (no 'Z' suffix, no timezone offset)
+//   - Display as-is without conversion
+//
+// Example:
+//   User selects: 9:23 PM on 2024-12-30
+//   Send to API:  '2024-12-30 21:23:00'
+//   Store in DB:  2024-12-30 21:23:00 (DATETIME2)
+//   Return from API: "2024-12-30T21:23:00"
+//   Display to user: 9:23 PM on 2024-12-30
+// ============================================================================
+
 function authHeader() {
   const u = JSON.parse(localStorage.getItem("farm_user") || "null");
   return u && u.token ? { Authorization: "Bearer " + u.token } : {};
@@ -208,14 +233,26 @@ async function getErrorMessage(response) {
       eventDeviceId.value = event.DeviceId;
     }
     
-    // Set date and time from timestamp
+    // Set date and time from timestamp (preserve local time, no timezone conversion)
     if (event.Timestamp) {
-      const date = new Date(event.Timestamp);
-      const dateString = date.toISOString().split('T')[0];
-      const timeString = date.toTimeString().split(' ')[0].substring(0, 5);
+      // Parse timestamp as local time
+      let timestampStr = event.Timestamp.toString().replace('T', ' ');
+      const date = new Date(timestampStr);
+      
+      // Extract date and time components without timezone conversion
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      const dateString = `${year}-${month}-${day}`;
+      const timeString = `${hours}:${minutes}`;
       
       if (eventDate) eventDate.value = dateString;
       if (eventTime) eventTime.value = timeString;
+      
+      console.log('Edit form populated with local time:', dateString, timeString);
     }
     
     if (eventType) {
@@ -241,12 +278,75 @@ async function getErrorMessage(response) {
     }
   }
 
-  // Load events
+  // Helper function to build SQL query for events
+  // Returns events up to and including the selected date
+  // 
+  // Example Event data format (SQL):
+  // INSERT INTO [Event] ([Timestamp], StaffId, DeviceId, EventType, Reason)
+  // VALUES 
+  // ('2024-12-30 08:00:00', 2, 1, 'Clock in', NULL),
+  // ('2024-12-30 18:30:00', 2, 1, 'Clock out', NULL)
+  function buildEventsQuery(targetDate) {
+    const sqlQuery = `
+      SELECT EventId, Timestamp, StaffId, DeviceId, EventType, Reason 
+      FROM [Event] 
+      WHERE CAST(Timestamp AS DATE) <= '${targetDate}'
+      ORDER BY Timestamp DESC
+    `.trim();
+    
+    return sqlQuery;
+  }
+  
+  // Log example SQL queries for reference
+  console.log(`
+====================================
+Events SQL Query Examples:
+====================================
+
+1. Get all events:
+SELECT EventId, Timestamp, StaffId, DeviceId, EventType, Reason FROM [Event]
+
+2. Get events for specific date:
+SELECT * FROM [Event] WHERE CAST(Timestamp AS DATE) = '2024-12-30'
+
+3. Get events up to a date:
+SELECT * FROM [Event] WHERE CAST(Timestamp AS DATE) <= '2024-12-30' ORDER BY Timestamp DESC
+
+4. Get Clock In events only:
+SELECT * FROM [Event] WHERE EventType = 'Clock in'
+
+5. Get events for specific staff:
+SELECT * FROM [Event] WHERE StaffId = 2
+
+Event Table Structure:
+- EventId (int, PK, auto-increment)
+- Timestamp (datetime2(0))
+- StaffId (int, FK to Staff)
+- DeviceId (int, nullable, FK to Device)
+- EventType (nvarchar, 'Clock in' or 'Clock out')
+- Reason (nvarchar, nullable)
+====================================
+  `);
+
+  // Load events using POST /api/Events/query with SQL query
   async function fetchEvents() {
     try {
-      const res = await fetch(`${window.API_BASE}/Events/`, {
-        method: "GET",
-        headers: { ...authHeader() },
+      // Get selected date or use current date
+      const queryDate = selectedDate?.value || new Date().toISOString().split('T')[0];
+      
+      // Build SQL query to get events up to the selected date
+      const sqlQuery = buildEventsQuery(queryDate);
+
+      console.log('SQL Query to be sent:', sqlQuery);
+
+      // POST SQL query to /api/Events/query
+      const res = await fetch(`${window.API_BASE}/Events/query`, {
+        method: "POST",
+        headers: { 
+          ...authHeader(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(sqlQuery)
       });
 
       if (!res.ok) {
@@ -256,13 +356,16 @@ async function getErrorMessage(response) {
       const data = await res.json();
       if (!Array.isArray(data)) throw new Error("Response was not array.");
       
-      // Sort by timestamp descending (newest first)
-      eventsData = data.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+      console.log('Events loaded via SQL query:', data.length, 'events');
+      
+      // Data is already sorted DESC by Timestamp in SQL query
+      eventsData = data;
       
       renderTable(getPaginatedData());
       renderPagination();
       applyFilters();
     } catch (err) {
+      console.error('Error fetching events:', err);
       if (loadError) {
         loadError.textContent = err.message || "Cannot download data.";
         loadError.classList.remove("d-none");
@@ -429,7 +532,22 @@ async function getErrorMessage(response) {
 
   function formatDateTime(timestamp) {
     if (!timestamp) return 'N/A';
-    const date = new Date(timestamp);
+    
+    // Parse timestamp as local time (no timezone conversion)
+    // Backend returns: "2024-12-30T21:23:00" or "2024-12-30 21:23:00"
+    // We want to display it as-is without timezone conversion
+    
+    let dateStr = timestamp.toString();
+    
+    // If timestamp contains 'Z' or timezone offset, it will be converted
+    // Replace 'T' with space if present for consistent parsing
+    dateStr = dateStr.replace('T', ' ');
+    
+    // Parse as local time by appending to string that doesn't trigger UTC parse
+    // When no timezone info is present, JS Date treats it as local time
+    const date = new Date(dateStr);
+    
+    // Format the datetime for display
     return date.toLocaleString('en-AU', {
       year: 'numeric',
       month: '2-digit',
@@ -567,16 +685,26 @@ async function getErrorMessage(response) {
       }
 
       try {
-        // Get form data according to backend Event model
-        const timestamp = new Date(`${eventDate.value}T${eventTime.value}`).toISOString();
+        // Get form data according to backend C# Event model
+        // Model: EventId, Timestamp, StaffId, DeviceId (nullable), EventType, Reason (nullable)
+        
+        // IMPORTANT: Send timestamp as local datetime string WITHOUT timezone conversion
+        // Backend expects: '2024-12-30 21:23:00' (DATETIME2(0) format)
+        // Do NOT use .toISOString() as it converts to UTC causing timezone issues
+        const timestamp = `${eventDate.value} ${eventTime.value}:00`;
+        
+        console.log('Local timestamp to send:', timestamp);
+        
+        // Parse DeviceId - can be null according to C# model (int?)
+        const deviceIdValue = eventDeviceId.value ? parseInt(eventDeviceId.value) : null;
         
         const formData = {
-          EventId: 0, // Will be set by backend
-          Timestamp: timestamp,
+          EventId: 0, // Will be auto-generated by backend
+          Timestamp: timestamp, // Format: 'YYYY-MM-DD HH:MM:SS'
           StaffId: parseInt(eventStaffId.value),
-          DeviceId: parseInt(eventDeviceId.value),
-          EventType: eventType.value,
-          Reason: eventReason.value || null
+          DeviceId: deviceIdValue, // Can be null (int? in C#)
+          EventType: eventType.value, // "Clock In" or "Clock Out"
+          Reason: eventReason.value.trim() || null // Can be null (string? in C#)
         };
 
         console.log('Form data to be submitted:', formData);
@@ -589,6 +717,8 @@ async function getErrorMessage(response) {
         console.log(`${isEdit ? 'Updating' : 'Creating'} event:`, { url, method });
         
         // Call API to create or update event
+        // POST /api/Events/ - Create new event (Clock In or Clock Out)
+        // PUT /api/Events/{id} - Update existing event
         const res = await fetch(url, {
           method: method,
           headers: { 

@@ -11,6 +11,14 @@
   // Issue: Staff ID needs to be a dropdown instead of text input
   // Bug Reference: Sprint 3 Frontend UI Fixes
   // =================================================================
+  // =================================================================
+  // Feature Update: Allow any date selection for payroll calculation
+  // Developer: Tim
+  // Date: 2025-10-12
+  // Description: Changed from requiring Monday date to accepting any date in the week.
+  //              System will calculate payroll for the entire week containing the selected date.
+  // Issue: Users should be able to select any day, not just Monday
+  // =================================================================
   const payrollForm = document.getElementById("payrollForm");
   const staffIdInput = document.getElementById("staffId");
   const mondayDateInput = document.getElementById("mondayDate");
@@ -125,7 +133,7 @@
 
       if (!mondayDate) {
         setLoading(false);
-        showError("Monday date is required");
+        showError("Date is required");
         return;
       }
 
