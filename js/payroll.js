@@ -3,6 +3,14 @@
   const loadingBox = document.getElementById("loadingBox");
   const resultBox = document.getElementById("resultBox");
 
+  // =================================================================
+  // Bug Fix: Add staff dropdown population functionality
+  // Developer: Tim
+  // Date: 2025-10-12
+  // Description: Added function to populate staff dropdown with existing staff
+  // Issue: Staff ID needs to be a dropdown instead of text input
+  // Bug Reference: Sprint 3 Frontend UI Fixes
+  // =================================================================
   const payrollForm = document.getElementById("payrollForm");
   const staffIdInput = document.getElementById("staffId");
   const mondayDateInput = document.getElementById("mondayDate");
@@ -70,6 +78,34 @@
     else loadingBox.classList.add("d-none");
   }
 
+  // Bug Fix: Add function to populate staff dropdown
+  async function populateStaffDropdown() {
+    if (!staffIdInput) return;
+
+    try {
+      const response = await fetch(`${window.API_BASE}/Staffs`);
+      if (!response.ok) {
+        console.error('Failed to load staff list');
+        return;
+      }
+
+      const staffList = await response.json();
+
+      // Clear existing options except the first one
+      staffIdInput.innerHTML = '<option value="">-- Select Staff --</option>';
+
+      // Add staff options
+      staffList.forEach(staff => {
+        const option = document.createElement('option');
+        option.value = staff.StaffId;
+        option.textContent = `${staff.StaffId} - ${staff.FirstName} ${staff.LastName}`;
+        staffIdInput.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Error loading staff list:', error);
+    }
+  }
+
   if (payrollForm) {
     payrollForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -122,4 +158,13 @@
       }
     });
   }
+
+  // Bug Fix: Load staff dropdown on page load
+  // Initialize staff dropdown when page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    populateStaffDropdown();
+  });
+
+  // Also call it immediately in case DOMContentLoaded already fired
+  populateStaffDropdown();
 })();

@@ -58,6 +58,14 @@ function isValidPhoneNumber(phone) {
       return;
     }
 
+    // =================================================================
+    // Bug Fix: Remove references to deleted fields
+    // Developer: Tim
+    // Date: 2025-10-12
+    // Description: Removed StandardHoursPerWeek and OvertimePayRate field references
+    // Issue: Fields were removed from HTML form
+    // Bug Reference: Sprint 3 Frontend UI Fixes
+    // =================================================================
     // Gather values
     const payloadPascal = {
       FirstName: document.getElementById('FirstName').value.trim(),
@@ -68,11 +76,10 @@ function isValidPhoneNumber(phone) {
       Address: document.getElementById('Address').value.trim() || null,
       ContractType: document.getElementById('ContractType').value.trim() || null,
       Role: document.getElementById('Role').value,
-      StandardHoursPerWeek: numOrNull(document.getElementById('StandardHoursPerWeek').value),
-      StandardPayRate: numOrNull(document.getElementById('StandardPayRate').value),
-      OvertimePayRate: numOrNull(document.getElementById('OvertimePayRate').value)
+      StandardPayRate: numOrNull(document.getElementById('StandardPayRate').value)
     };
 
+    // Bug Fix: Remove references to deleted fields in camelCase payload
     // Also include camelCase keys for compatibility with typical .NET JSON policies
     const payloadCamel = {
       firstName: payloadPascal.FirstName,
@@ -83,9 +90,7 @@ function isValidPhoneNumber(phone) {
       address: payloadPascal.Address,
       contractType: payloadPascal.ContractType,
       role: payloadPascal.Role,
-      standardHoursPerWeek: payloadPascal.StandardHoursPerWeek,
-      standardPayRate: payloadPascal.StandardPayRate,
-      overtimePayRate: payloadPascal.OvertimePayRate
+      standardPayRate: payloadPascal.StandardPayRate
     };
 
     const payload = Object.assign({}, payloadPascal, payloadCamel);

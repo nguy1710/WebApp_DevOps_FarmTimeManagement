@@ -29,7 +29,8 @@
         </div>
       </div>
 
-      <div class="row g-3 mb-3">
+      <!-- Individual Staff Update Section -->
+      <div class="row g-3 mb-3 align-items-end">
         <div class="col-md-3">
           <label class="form-label">Staff ID (Individual Update)</label>
           <input
@@ -38,6 +39,16 @@
             class="form-control"
             min="1"
             placeholder="e.g. 1"
+          />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Staff Name</label>
+          <input
+            type="text"
+            id="staffName"
+            class="form-control"
+            readonly
+            placeholder="Auto-filled when Staff ID entered"
           />
         </div>
         <div class="col-md-3">
@@ -51,23 +62,14 @@
           />
         </div>
         <div class="col-md-3">
-          <label class="form-label">Overtime Rate ($/hr)</label>
-          <input
-            type="number"
-            id="otRate"
-            class="form-control"
-            step="0.01"
-            min="0"
-          />
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
           <button id="btnUpdateStaff" class="btn btn-primary w-100">
-            Update Staff Pay Rate
+            Update
           </button>
         </div>
       </div>
 
-      <div class="row g-3 mb-3">
+      <!-- Bulk Update Section -->
+      <div class="row g-3 mb-3 align-items-end">
         <div class="col-md-3">
           <label class="form-label">Role (Bulk)</label>
           <select id="bulkRole" class="form-select">
@@ -96,17 +98,7 @@
           />
         </div>
         <div class="col-md-3">
-          <label class="form-label">Overtime Rate ($/hr)</label>
-          <input
-            type="number"
-            id="bulkOtRate"
-            class="form-control"
-            step="0.01"
-            min="0"
-          />
-        </div>
-        <div class="col-12 d-flex justify-content-end">
-          <button id="btnBulkUpdate" class="btn btn-success">
+          <button id="btnBulkUpdate" class="btn btn-success w-100">
             Bulk Update (Admin)
           </button>
         </div>

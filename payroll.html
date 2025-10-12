@@ -21,15 +21,23 @@
       <div class="card mb-3">
         <div class="card-body">
           <form id="payrollForm" class="row g-3">
+            <!-- =================================================================
+            Bug Fix: Convert Staff ID input to dropdown selection
+            Developer: Tim
+            Date: 2025-10-12
+            Description: Changed Staff ID from input field to dropdown for easier selection
+            Issue: Users need easier way to select existing staff
+            Bug Reference: Sprint 3 Frontend UI Fixes
+            ================================================================= -->
             <div class="col-md-3">
               <label for="staffId" class="form-label">Staff ID</label>
-              <input
-                type="number"
+              <select
                 id="staffId"
-                class="form-control"
-                min="1"
+                class="form-select"
                 required
-              />
+              >
+                <option value="">-- Select Staff --</option>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="mondayDate" class="form-label"
@@ -49,8 +57,16 @@
                   type="checkbox"
                   id="isSpecialPayRate"
                 />
+                <!-- =================================================================
+                Bug Fix: Change button text from 'Use Award Rates' to 'Use Minimum Award Base Rate'
+                Developer: Tim
+                Date: 2025-10-12
+                Description: Updated checkbox label text for clarity
+                Issue: Text needs to be more descriptive per user requirements
+                Bug Reference: Sprint 3 Frontend UI Fixes
+                ================================================================= -->
                 <label class="form-check-label" for="isSpecialPayRate">
-                  Use Award Rates
+                  Use Minimum Award Base Rate
                 </label>
               </div>
             </div>
@@ -105,8 +121,16 @@
                 <div>
                   <strong>Annual Tax:</strong> $<span id="annualTax">-</span>
                 </div>
+                <!-- =================================================================
+                Bug Fix: Update super rate from 11.5% to 12%
+                Developer: Tim
+                Date: 2025-10-12
+                Description: Updated superannuation rate display to reflect new 12% rate
+                Issue: Super rate needs to be updated from 11.5% to 12%
+                Bug Reference: Sprint 3 Frontend UI Fixes
+                ================================================================= -->
                 <div>
-                  <strong>Super (11.5%):</strong> $<span id="super">-</span>
+                  <strong>Super (12%):</strong> $<span id="super">-</span>
                 </div>
               </div>
             </div>
