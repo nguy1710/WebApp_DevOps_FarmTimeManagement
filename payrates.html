@@ -29,8 +29,16 @@
         </div>
       </div>
 
+      <!-- =================================================================
+      Bug Fix: Remove Overtime Rate field and add Staff Name beside Staff ID
+      Developer: Tim
+      Date: 2025-10-12
+      Description: Removed Overtime Rate field and added Staff Name field for better identification
+      Issue: Overtime Rate should be removed and Staff Name should be displayed
+      Bug Reference: Sprint 3 Frontend UI Fixes
+      ================================================================= -->
       <div class="row g-3 mb-3">
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label">Staff ID (Individual Update)</label>
           <input
             type="number"
@@ -38,6 +46,16 @@
             class="form-control"
             min="1"
             placeholder="e.g. 1"
+          />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Staff Name</label>
+          <input
+            type="text"
+            id="staffName"
+            class="form-control"
+            readonly
+            placeholder="Auto-filled when Staff ID entered"
           />
         </div>
         <div class="col-md-3">
@@ -50,17 +68,7 @@
             min="0"
           />
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Overtime Rate ($/hr)</label>
-          <input
-            type="number"
-            id="otRate"
-            class="form-control"
-            step="0.01"
-            min="0"
-          />
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
+        <div class="col-md-4 d-flex align-items-end">
           <button id="btnUpdateStaff" class="btn btn-primary w-100">
             Update Staff Pay Rate
           </button>
@@ -95,16 +103,8 @@
             min="0"
           />
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Overtime Rate ($/hr)</label>
-          <input
-            type="number"
-            id="bulkOtRate"
-            class="form-control"
-            step="0.01"
-            min="0"
-          />
-        </div>
+        <!-- Bug Fix: Remove Overtime Rate field from bulk update section -->
+        <!-- Overtime Rate field removed as per Sprint 3 requirements -->
         <div class="col-12 d-flex justify-content-end">
           <button id="btnBulkUpdate" class="btn btn-success">
             Bulk Update (Admin)

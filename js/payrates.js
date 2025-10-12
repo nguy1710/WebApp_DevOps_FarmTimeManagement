@@ -9,14 +9,21 @@
   const btnUpdateStaff = document.getElementById("btnUpdateStaff");
   const btnBulkUpdate = document.getElementById("btnBulkUpdate");
 
+  // =================================================================
+  // Bug Fix: Remove overtime rate references and add staff name support
+  // Developer: Tim
+  // Date: 2025-10-12
+  // Description: Removed otRate and bulkOtRate references, added staffName
+  // Issue: Overtime Rate fields were removed from HTML
+  // Bug Reference: Sprint 3 Frontend UI Fixes
+  // =================================================================
   const staffId = document.getElementById("staffId");
+  const staffName = document.getElementById("staffName");
   const stdRate = document.getElementById("stdRate");
-  const otRate = document.getElementById("otRate");
 
   const bulkRole = document.getElementById("bulkRole");
   const bulkContract = document.getElementById("bulkContract");
   const bulkStdRate = document.getElementById("bulkStdRate");
-  const bulkOtRate = document.getElementById("bulkOtRate");
 
   function showError(message) {
     if (!loadError) return;
@@ -109,6 +116,28 @@
     });
   }
 
+  // Bug Fix: Add staff name lookup functionality
+  if (staffId) {
+    staffId.addEventListener("blur", async () => {
+      const id = Number(staffId.value || "");
+      if (Number.isFinite(id) && id > 0) {
+        try {
+          const res = await fetch(`${window.API_BASE}/Staffs/${id}`);
+          if (res.ok) {
+            const staff = await res.json();
+            if (staffName) {
+              staffName.value = `${staff.FirstName || ''} ${staff.LastName || ''}`.trim();
+            }
+          }
+        } catch (err) {
+          // Silently fail - staff name will remain empty
+        }
+      } else if (staffName) {
+        staffName.value = "";
+      }
+    });
+  }
+
   if (btnUpdateStaff) {
     btnUpdateStaff.addEventListener("click", async () => {
       hideError();
@@ -116,11 +145,10 @@
       try {
         const id = Number(staffId?.value || "");
         const sr = Number(stdRate?.value || "");
-        const or = Number(otRate?.value || "");
         if (!Number.isFinite(id) || id <= 0)
           throw new Error("Invalid staff ID");
-        if (!Number.isFinite(sr) || !Number.isFinite(or))
-          throw new Error("Enter valid rates");
+        if (!Number.isFinite(sr) || sr < 0)
+          throw new Error("Enter valid standard rate");
 
         const res = await fetch(
           `${window.API_BASE}/payrates/staff/${encodeURIComponent(
@@ -129,7 +157,7 @@
           {
             method: "PUT",
             headers: { "Content-Type": "application/json", ...authHeader() },
-            body: JSON.stringify({ standardPayRate: sr, overtimePayRate: or }),
+            body: JSON.stringify({ standardPayRate: sr }),
           }
         );
         if (!res.ok) {
@@ -146,6 +174,7 @@
     });
   }
 
+  // Bug Fix: Remove overtime rate from bulk update
   if (btnBulkUpdate) {
     btnBulkUpdate.addEventListener("click", async () => {
       hideError();
@@ -154,11 +183,10 @@
         const role = (bulkRole?.value || "").trim();
         const contract = (bulkContract?.value || "").trim();
         const sr = Number(bulkStdRate?.value || "");
-        const or = Number(bulkOtRate?.value || "");
         if (!role || !contract)
           throw new Error("Select role and contract type");
-        if (!Number.isFinite(sr) || !Number.isFinite(or))
-          throw new Error("Enter valid rates");
+        if (!Number.isFinite(sr) || sr < 0)
+          throw new Error("Enter valid standard rate");
 
         const res = await fetch(
           `${window.API_BASE}/payrates/bulk/${encodeURIComponent(
@@ -167,7 +195,7 @@
           {
             method: "PUT",
             headers: { "Content-Type": "application/json", ...authHeader() },
-            body: JSON.stringify({ standardPayRate: sr, overtimePayRate: or }),
+            body: JSON.stringify({ standardPayRate: sr }),
           }
         );
         if (!res.ok) {
