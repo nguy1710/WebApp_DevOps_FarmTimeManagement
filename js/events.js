@@ -279,18 +279,17 @@ async function getErrorMessage(response) {
   }
 
   // Helper function to build SQL query for events
-  // Returns events up to and including the selected date
+  // Returns all events (no date filtering in SQL, filtering happens in frontend)
   // 
   // Example Event data format (SQL):
   // INSERT INTO [Event] ([Timestamp], StaffId, DeviceId, EventType, Reason)
   // VALUES 
   // ('2024-12-30 08:00:00', 2, 1, 'Clock in', NULL),
   // ('2024-12-30 18:30:00', 2, 1, 'Clock out', NULL)
-  function buildEventsQuery(targetDate) {
+  function buildEventsQuery() {
     const sqlQuery = `
       SELECT EventId, Timestamp, StaffId, DeviceId, EventType, Reason 
       FROM [Event] 
-      WHERE CAST(Timestamp AS DATE) <= '${targetDate}'
       ORDER BY Timestamp DESC
     `.trim();
     
@@ -331,11 +330,8 @@ Event Table Structure:
   // Load events using POST /api/Events/query with SQL query
   async function fetchEvents() {
     try {
-      // Get selected date or use current date
-      const queryDate = selectedDate?.value || new Date().toISOString().split('T')[0];
-      
-      // Build SQL query to get events up to the selected date
-      const sqlQuery = buildEventsQuery(queryDate);
+      // Build SQL query to get all events (filtering by date happens in frontend)
+      const sqlQuery = buildEventsQuery();
 
       console.log('SQL Query to be sent:', sqlQuery);
 
@@ -703,7 +699,7 @@ Event Table Structure:
           Timestamp: timestamp, // Format: 'YYYY-MM-DD HH:MM:SS'
           StaffId: parseInt(eventStaffId.value),
           DeviceId: deviceIdValue, // Can be null (int? in C#)
-          EventType: eventType.value, // "Clock In" or "Clock Out"
+          EventType: eventType.value, // "Clock in" or "Clock out"
           Reason: eventReason.value.trim() || null // Can be null (string? in C#)
         };
 

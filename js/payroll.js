@@ -167,12 +167,27 @@
     });
   }
 
+  // Set current date as default value for date input
+  function setCurrentDate() {
+    if (!mondayDateInput) return;
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    mondayDateInput.value = dateString;
+  }
+
   // Bug Fix: Load staff dropdown on page load
   // Initialize staff dropdown when page loads
   document.addEventListener('DOMContentLoaded', () => {
     populateStaffDropdown();
+    setCurrentDate();
   });
 
   // Also call it immediately in case DOMContentLoaded already fired
   populateStaffDropdown();
+  setCurrentDate();
 })();
