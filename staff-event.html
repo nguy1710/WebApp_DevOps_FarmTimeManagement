@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Events - Staff Portal</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="navigation-container"></div>
+
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">My Events</h2>
+        <button id="btnRefresh" class="btn btn-outline-primary">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+
+      <div id="loadError" class="alert alert-danger d-none"></div>
+      <div id="loadingBox" class="alert alert-info d-none">Loading events...</div>
+
+      <!-- Filter Section -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="filterEventType" class="form-label">Event Type</label>
+              <select id="filterEventType" class="form-select">
+                <option value="">All Types</option>
+                <option value="Clock in">Clock in</option>
+                <option value="Clock out">Clock out</option>
+                <option value="Break">Break</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Date Navigation</label>
+              <div class="btn-group w-100" role="group">
+                <button type="button" id="btnPrevDay" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-chevron-left"></i> Previous
+                </button>
+                <button type="button" id="btnToday" class="btn btn-primary btn-sm">
+                  Today
+                </button>
+                <button type="button" id="btnNextDay" class="btn btn-outline-secondary btn-sm">
+                  Next <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+              <div class="text-center mt-2">
+                <small class="text-muted">Viewing: <span id="currentDateDisplay" class="fw-bold"></span></small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Events Table -->
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>Event ID</th>
+                  <th>Timestamp</th>
+                  <th>Event Type</th>
+                  <th>Device</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="eventsTableBody">
+                <tr>
+                  <td colspan="5" class="text-center text-muted">
+                    No events found
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <nav aria-label="Events pagination" class="mt-3">
+        <ul class="pagination justify-content-center" id="pagination">
+        </ul>
+      </nav>
+    </div>
+
+    <script>
+      window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+    </script>
+    <script src="js/staff-navigation.js"></script>
+    <script src="js/staff-event.js"></script>
+  </body>
+</html>

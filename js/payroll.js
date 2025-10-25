@@ -62,6 +62,8 @@
     return Number.isFinite(x) ? x.toFixed(2) : "-";
   }
 
+  const btnCreatePayslip = document.getElementById('btnCreatePayslip');
+
   function setResult(data) {
     if (!resultBox) return;
     resultBox.classList.remove("d-none");
@@ -78,6 +80,11 @@
     annualIncome.textContent = formatMoney(data.annualIncome);
     annualTax.textContent = formatMoney(data.annualTax);
     superEl.textContent = formatMoney(data.employerSuperannuation);
+    
+    // Show Create Payslip button when result is displayed
+    if (btnCreatePayslip) {
+      btnCreatePayslip.style.display = 'block';
+    }
   }
 
   function setLoading(isLoading) {
@@ -190,4 +197,19 @@
   // Also call it immediately in case DOMContentLoaded already fired
   populateStaffDropdown();
   setCurrentDate();
+
+  // Handle Create Payslip button click
+  if (btnCreatePayslip) {
+    btnCreatePayslip.addEventListener('click', () => {
+      const staffId = staffIdInput?.value;
+      const weekStartDate = mondayDateInput?.value;
+      
+      if (staffId && weekStartDate) {
+        // Redirect to create-payslip page with query parameters
+        window.location.href = `create-payslip.html?staffId=${staffId}&weekStartDate=${weekStartDate}`;
+      } else {
+        alert('Please calculate payroll first before creating a payslip.');
+      }
+    });
+  }
 })();

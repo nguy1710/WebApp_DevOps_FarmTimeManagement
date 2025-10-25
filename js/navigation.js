@@ -25,6 +25,10 @@ class Navigation {
         return 'payroll';
       case 'payrates.html':
         return 'payrates';
+      case 'create-payslip.html':
+        return 'create-payslip';
+      case 'payslip.html':
+        return 'payslip';
       default:
         return 'staff';
     }
@@ -42,8 +46,8 @@ class Navigation {
             />
           </a>
           <div class="d-flex align-items-center gap-2">
-            <a href="payroll.html" class="btn ${this.currentPage === 'payroll' ? 'btn-light' : 'btn-warning'} btn-sm">
-              Payroll
+            <a href="payslip.html" class="btn ${this.currentPage === 'payslip' ? 'btn-light' : 'btn-warning'} btn-sm">
+              Payslips
             </a>
             <a href="payrates.html" class="btn ${this.currentPage === 'payrates' ? 'btn-light' : 'btn-warning'} btn-sm">
               Pay Rates

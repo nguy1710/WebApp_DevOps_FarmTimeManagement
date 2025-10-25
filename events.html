@@ -21,6 +21,9 @@
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">Clock In/Out Events</h3>
         <div class="d-flex gap-2">
+          <button id="btnDeleteSelected" class="btn btn-danger btn-sm d-none">
+            <i class="bi bi-trash me-1"></i>Delete Selected
+          </button>
           <button id="btnCreateEvent" class="btn btn-success btn-sm">
             Create Event
           </button>
@@ -105,6 +108,9 @@
         <table class="table table-bordered align-middle">
           <thead class="table-light">
             <tr>
+              <th>
+                <input type="checkbox" id="selectAllCheckbox" class="form-check-input" title="Select All">
+              </th>
               <th>Event ID</th>
               <th>Timestamp</th>
               <th>Staff Full Name</th>
