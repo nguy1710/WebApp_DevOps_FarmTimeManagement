@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Clock - Farm Time Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    
+    .camera-container {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    #videoElement {
+      width: 100%;
+      min-height: 350px;
+      display: block;
+    }
+    
+    .camera-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      border: 3px solid #28a745;
+      border-radius: 10px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+    
+    .camera-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border-radius: 5px;
+      font-size: 0.85rem;
+    }
+    
+    .status-display {
+      min-height: 60px;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+</head>
+
+<body class="d-flex align-items-center justify-content-center" style="min-height:100vh;">
+  <!-- Back to Login Button - Outside Card -->
+  <div class="position-fixed top-0 start-0 m-3" style="z-index: 1050;">
+    <a href="login.html" class="btn btn-primary btn-lg shadow">
+      <i class="bi bi-arrow-left me-2"></i>Back to Login
+    </a>
+  </div>
+
+  <div class="container py-4">
+    <!-- Header -->
+    <div class="text-center mb-4">
+      <img src="assets/beerenberglogo.png" 
+           alt="Farm Time Logo" 
+           class="rounded-3 mb-3"
+           style="width:200px; height:auto; object-fit:cover;">
+      <h2 class="text-danger mb-2">Adelaide Farm Time Management</h2>
+      <h4 class="text-success mb-0">Staff Clock In/Out</h4>
+    </div>
+
+    <!-- Main Content: 2 Columns Layout -->
+    <div class="row">
+      <!-- Left Column: Device Selection & Camera Section -->
+      <div class="col-lg-5 mb-4">
+        <!-- Device Selection -->
+        <div class="card mb-3 shadow">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-geo-alt me-2"></i>Select Device Location
+            </h5>
+          </div>
+          <div class="card-body">
+            <select id="deviceSelect" class="form-select form-select-lg">
+              <option value="">Loading devices...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Camera Section -->
+        <div class="card shadow" id="cameraSection" style="display: none;">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-camera-video me-2"></i>Biometric scanner
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="camera-container">
+              <div id="videoElement"></div>
+              <div class="camera-overlay"></div>
+              <div class="camera-status">
+                <i class="bi bi-circle-fill text-danger me-1" id="statusIndicator"></i>
+                <span id="statusText">Initializing...</span>
+              </div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="statusDisplay" class="status-display status-info d-none">
+              <div id="statusMessage" class="text-center fw-bold"></div>
+            </div>
+            
+            <!-- Sample Data Info -->
+            <div class="mt-3 text-center">
+              <small class="text-info fw-bold">Sample Staff login biometric data: 123456789</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Daily Events -->
+      <div class="col-lg-7 mb-4">
+        <div class="card shadow h-100">
+          <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="bi bi-clock-history me-2"></i>Daily Events
+              </h5>
+              <div class="d-flex gap-2">
+                <button id="btnPrevDay" class="btn btn-outline-light btn-sm">
+                  &lt; Previous
+                </button>
+                <button id="btnToday" class="btn btn-light btn-sm">
+                  Today
+                </button>
+                <button id="btnNextDay" class="btn btn-outline-light btn-sm">
+                  Next &gt;
+                </button>
+              </div>
+            </div>
+            <div class="text-center mt-2">
+              <small class="text-light">Viewing: <span id="currentDateDisplay" class="fw-bold"></span></small>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="eventsLoading" class="text-center py-5">
+              <i class="bi bi-hourglass-split fs-1 text-muted"></i>
+              <p class="text-muted mt-2">Loading events...</p>
+            </div>
+            <div id="eventsContainer" class="d-none">
+              <div id="eventsTableContainer" class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-sm table-hover">
+                  <thead class="table-light sticky-top">
+                    <tr>
+                      <th>Time</th>
+                      <th>Staff Name</th>
+                      <th>Role</th>
+                      <th>Event</th>
+                      <th>Device</th>
+                    </tr>
+                  </thead>
+                  <tbody id="eventsTableBody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div id="eventsEmpty" class="d-none text-center py-5">
+              <i class="bi bi-inbox fs-1 text-muted"></i>
+              <p class="text-muted mt-2">No events found for this day</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row for instructions and footer -->
+    <div class="row">
+      <div class="col-12">
+
+        <!-- Staff Actions Modal -->
+        <div class="modal fade" id="staffActionsModal" tabindex="-1" aria-labelledby="staffActionsModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="staffActionsModalLabel">
+                  <i class="bi bi-person-check me-2"></i>Staff Actions
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <h6 id="staffInfo" class="text-muted"></h6>
+                </div>
+                <div class="d-grid gap-2">
+                  <button id="btnClockIn" class="btn btn-success btn-lg">
+                    <i class="bi bi-box-arrow-in-down me-2"></i>Clock In
+                  </button>
+                  <button id="btnClockOut" class="btn btn-warning btn-lg">
+                    <i class="bi bi-box-arrow-right me-2"></i>Clock Out
+                  </button>
+                  <button id="btnBreak" class="btn btn-info btn-lg">
+                    <i class="bi bi-cup-hot me-2"></i>Break
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="alert alert-info mt-4 mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Instructions:</strong> 
+          <ol class="mb-0 mt-2">
+            <li>Show your QR code or barcode to the camera</li>
+            <li>Wait for confirmation message</li>
+          </ol>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+          <p class="text-white mb-0" style="font-size: 0.85rem; font-weight:500;">DevOps and Enterprise Systems Project</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.API_BASE = "https://flindersdevops.azurewebsites.net/api";
+  </script>
+  <!-- Use html5-qrcode library instead -->
+  <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/staff-clock.js"></script>
+</body>
+</html>

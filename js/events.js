@@ -53,6 +53,8 @@ async function getErrorMessage(response) {
   const btnToday = document.getElementById("btnToday");
   const btnClearFilters = document.getElementById("btnClearFilters");
   const btnCreateEvent = document.getElementById("btnCreateEvent");
+  const btnDeleteSelected = document.getElementById("btnDeleteSelected");
+  const selectAllCheckbox = document.getElementById("selectAllCheckbox");
 
   // Modal elements
   const createEventModal = document.getElementById("createEventModal");
@@ -422,6 +424,9 @@ Event Table Structure:
       .map(
         (event) => `
       <tr>
+        <td>
+          <input type="checkbox" class="form-check-input event-checkbox" data-event-id="${safe(event.EventId)}">
+        </td>
         <td>${safe(event.EventId)}</td>
         <td>${formatDateTime(event.Timestamp)}</td>
         <td>${safe(getStaffFullName(event.StaffId))}</td>
@@ -450,6 +455,89 @@ Event Table Structure:
     `
       )
       .join("");
+    
+    // Update checkbox state after rendering
+    updateDeleteButtonVisibility();
+    setupCheckboxListeners();
+  }
+
+  // Setup checkbox listeners
+  function setupCheckboxListeners() {
+    // Individual checkboxes - use event delegation
+    if (tableBody) {
+      tableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('event-checkbox')) {
+          updateSelectAllCheckbox();
+          updateDeleteButtonVisibility();
+        }
+      });
+    }
+  }
+
+  // Update select all checkbox state
+  function updateSelectAllCheckbox() {
+    if (!selectAllCheckbox) return;
+    
+    const checkboxes = document.querySelectorAll('.event-checkbox');
+    const checkedCheckboxes = document.querySelectorAll('.event-checkbox:checked');
+    
+    selectAllCheckbox.checked = checkboxes.length > 0 && checkedCheckboxes.length === checkboxes.length;
+    selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < checkboxes.length;
+  }
+
+  // Show/hide delete selected button
+  function updateDeleteButtonVisibility() {
+    if (!btnDeleteSelected) return;
+    
+    const checkedCheckboxes = document.querySelectorAll('.event-checkbox:checked');
+    
+    if (checkedCheckboxes.length > 0) {
+      btnDeleteSelected.classList.remove('d-none');
+    } else {
+      btnDeleteSelected.classList.add('d-none');
+    }
+  }
+
+  // Delete selected events
+  async function deleteSelectedEvents() {
+    const checkedCheckboxes = document.querySelectorAll('.event-checkbox:checked');
+    
+    if (checkedCheckboxes.length === 0) {
+      alert('No events selected');
+      return;
+    }
+
+    const eventIds = Array.from(checkedCheckboxes).map(cb => cb.getAttribute('data-event-id'));
+    
+    const confirmMessage = `Are you sure you want to delete ${eventIds.length} event(s)?`;
+    const ok = confirm(confirmMessage);
+    
+    if (!ok) return;
+
+    try {
+      // Delete events one by one
+      for (const eventId of eventIds) {
+        const res = await fetch(
+          `${window.API_BASE}/Events/${encodeURIComponent(eventId)}`,
+          {
+            method: "DELETE",
+            headers: { ...authHeader() },
+          }
+        );
+
+        if (!res.ok) {
+          const errorMessage = await getErrorMessage(res);
+          throw new Error(`Failed to delete event ${eventId}: ${errorMessage}`);
+        }
+      }
+      
+      alert(`Successfully deleted ${eventIds.length} event(s)`);
+      
+      // Refresh the data after successful deletion
+      await initializeData();
+    } catch (err) {
+      alert(`Error deleting events: ${err.message || "Unknown error occurred"}`);
+    }
   }
 
   function renderPagination() {
@@ -793,6 +881,22 @@ Event Table Structure:
       if (loadingBox) loadingBox.classList.remove("d-none");
       if (loadError) loadError.classList.add("d-none");
       initializeData();
+    });
+  }
+
+  // Delete selected events button
+  if (btnDeleteSelected) {
+    btnDeleteSelected.addEventListener("click", deleteSelectedEvents);
+  }
+
+  // Select all checkbox
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      const checkboxes = document.querySelectorAll('.event-checkbox');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+      updateDeleteButtonVisibility();
     });
   }
 
