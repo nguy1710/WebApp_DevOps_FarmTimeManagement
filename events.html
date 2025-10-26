@@ -51,6 +51,7 @@
             <option value="">All</option>
             <option>Clock in</option>
             <option>Clock out</option>
+            <option>Break</option>
           </select>
         </div>
         <div class="col-sm-6 col-md-6">
@@ -189,6 +190,7 @@
                   <option value="">Select Event Type</option>
                   <option value="Clock in">Clock in</option>
                   <option value="Clock out">Clock out</option>
+                  <option value="Break">Break</option>
                 </select>
                 <div class="invalid-feedback">Please select event type.</div>
               </div>
@@ -250,7 +252,7 @@
       // 
       // Event Model (C#):
       //   EventId (int), Timestamp (DateTime), StaffId (int),
-      //   DeviceId (int?), EventType (string), Reason (string?)
+      //   DeviceId (int?), EventType (string: "Clock in", "Clock out", "Break"), Reason (string?)
       // ===================================================================
     </script>
     <script src="js/navigation.js"></script>
