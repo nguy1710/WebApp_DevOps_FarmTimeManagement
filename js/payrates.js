@@ -2,7 +2,7 @@
   const loadError = document.getElementById("loadError");
   const loadingBox = document.getElementById("loadingBox");
   const defaultsCard = document.getElementById("defaultsCard");
-  const defaultsJson = document.getElementById("defaultsJson");
+  const defaultsTable = document.getElementById("defaultsTable");
 
   const btnLoadDefaults = document.getElementById("btnLoadDefaults");
   const btnInitAll = document.getElementById("btnInitAll");
@@ -54,6 +54,43 @@
     else loadingBox.classList.add("d-none");
   }
 
+  function renderDefaultRatesTable(data) {
+    if (!defaultsTable) return;
+    
+    let html = '<div class="table-responsive"><table class="table table-bordered table-striped">';
+    
+    // Header
+    html += '<thead class="table-dark"><tr>';
+    html += '<th rowspan="2">Role</th>';
+    html += '<th rowspan="2">Contract Type</th>';
+    html += '<th colspan="3" class="text-center">Pay Rates ($/hr)</th>';
+    html += '</tr><tr>';
+    html += '<th>Standard Rate</th>';
+    html += '<th>Overtime Rate</th>';
+    html += '<th>Weekend Rate</th>';
+    html += '</tr></thead><tbody>';
+    
+    // Rows
+    for (const [role, contracts] of Object.entries(data)) {
+      let isFirstRow = true;
+      for (const [contractType, rates] of Object.entries(contracts)) {
+        html += '<tr>';
+        if (isFirstRow) {
+          html += `<td rowspan="${Object.keys(contracts).length}" class="align-middle"><strong>${role}</strong></td>`;
+          isFirstRow = false;
+        }
+        html += `<td>${contractType}</td>`;
+        html += `<td>$${rates.StandardRate}</td>`;
+        html += `<td>$${rates.OvertimeRate}</td>`;
+        html += `<td>$${rates.WeekendRate}</td>`;
+        html += '</tr>';
+      }
+    }
+    
+    html += '</tbody></table></div>';
+    defaultsTable.innerHTML = html;
+  }
+
   function authHeader() {
     try {
       const u = JSON.parse(localStorage.getItem("farm_user") || "null");
@@ -75,9 +112,7 @@
         }
         const data = await res.json();
         defaultsCard && defaultsCard.classList.remove("d-none");
-        if (defaultsJson) {
-          defaultsJson.textContent = JSON.stringify(data, null, 2);
-        }
+        renderDefaultRatesTable(data);
       } catch (err) {
         showError(err.message || "Failed to load defaults");
       } finally {

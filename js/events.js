@@ -287,7 +287,8 @@ async function getErrorMessage(response) {
   // INSERT INTO [Event] ([Timestamp], StaffId, DeviceId, EventType, Reason)
   // VALUES 
   // ('2024-12-30 08:00:00', 2, 1, 'Clock in', NULL),
-  // ('2024-12-30 18:30:00', 2, 1, 'Clock out', NULL)
+  // ('2024-12-30 18:30:00', 2, 1, 'Clock out', NULL),
+  // ('2024-12-30 13:00:00', 2, 1, 'Break', NULL)
   function buildEventsQuery() {
     const sqlQuery = `
       SELECT EventId, Timestamp, StaffId, DeviceId, EventType, Reason 
@@ -316,6 +317,9 @@ SELECT * FROM [Event] WHERE CAST(Timestamp AS DATE) <= '2024-12-30' ORDER BY Tim
 4. Get Clock In events only:
 SELECT * FROM [Event] WHERE EventType = 'Clock in'
 
+4b. Get Break events only:
+SELECT * FROM [Event] WHERE EventType = 'Break'
+
 5. Get events for specific staff:
 SELECT * FROM [Event] WHERE StaffId = 2
 
@@ -324,7 +328,7 @@ Event Table Structure:
 - Timestamp (datetime2(0))
 - StaffId (int, FK to Staff)
 - DeviceId (int, nullable, FK to Device)
-- EventType (nvarchar, 'Clock in' or 'Clock out')
+- EventType (nvarchar, 'Clock in', 'Clock out', or 'Break')
 - Reason (nvarchar, nullable)
 ====================================
   `);
@@ -649,6 +653,8 @@ Event Table Structure:
         return 'bg-success';
       case 'clock out':
         return 'bg-warning text-dark';
+      case 'break':
+        return 'bg-info text-dark';
       default:
         return 'bg-secondary';
     }
@@ -787,7 +793,7 @@ Event Table Structure:
           Timestamp: timestamp, // Format: 'YYYY-MM-DD HH:MM:SS'
           StaffId: parseInt(eventStaffId.value),
           DeviceId: deviceIdValue, // Can be null (int? in C#)
-          EventType: eventType.value, // "Clock in" or "Clock out"
+          EventType: eventType.value, // "Clock in", "Clock out", or "Break"
           Reason: eventReason.value.trim() || null // Can be null (string? in C#)
         };
 
