@@ -47,7 +47,8 @@
 
   function formatMoney(n) {
     const x = Number(n);
-    return Number.isFinite(x) ? `$${x.toFixed(2)}` : "-";
+    if (!Number.isFinite(x)) return "-";
+    return `$${x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   function formatDate(dateString) {

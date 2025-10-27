@@ -3,8 +3,6 @@
   const successMessage = document.getElementById("successMessage");
   const loadingBox = document.getElementById("loadingBox");
   const loadingBoxSpecial = document.getElementById("loadingBoxSpecial");
-  const resultBox = document.getElementById("resultBox");
-  const resultBoxSpecial = document.getElementById("resultBoxSpecial");
 
   const createPayslipForm = document.getElementById("createPayslipForm");
   const createPayslipSpecialForm = document.getElementById("createPayslipSpecialForm");
@@ -14,25 +12,6 @@
   const specialPayRateInput = document.getElementById("specialPayRate");
   const specialDateStartInput = document.getElementById("specialDateStart");
   const specialDateEndInput = document.getElementById("specialDateEnd");
-
-  const totalHours = document.getElementById("totalHours");
-  const weekStart = document.getElementById("weekStart");
-  const grossPay = document.getElementById("grossPay");
-  const weeklyPAYG = document.getElementById("weeklyPAYG");
-  const netPay = document.getElementById("netPay");
-  const annualIncome = document.getElementById("annualIncome");
-  const annualTax = document.getElementById("annualTax");
-  const superEl = document.getElementById("super");
-
-  // Special payslip result elements
-  const specialTotalHours = document.getElementById("specialTotalHours");
-  const specialDateRange = document.getElementById("specialDateRange");
-  const specialGrossPay = document.getElementById("specialGrossPay");
-  const specialWeeklyPAYG = document.getElementById("specialWeeklyPAYG");
-  const specialNetPay = document.getElementById("specialNetPay");
-  const specialAnnualIncome = document.getElementById("specialAnnualIncome");
-  const specialAnnualTax = document.getElementById("specialAnnualTax");
-  const specialSuper = document.getElementById("specialSuper");
 
   function showError(message) {
     if (!loadError) return;
@@ -66,7 +45,8 @@
 
   function formatMoney(n) {
     const x = Number(n);
-    return Number.isFinite(x) ? x.toFixed(2) : "-";
+    if (!Number.isFinite(x)) return "-";
+    return `$${x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   function formatDate(dateString) {
@@ -74,19 +54,58 @@
     return new Date(dateString).toLocaleDateString();
   }
 
-  function setResult(data) {
-    if (!resultBox) return;
-    resultBox.classList.remove("d-none");
-    totalHours.textContent = data.totalHoursWorked ?? "-";
-    weekStart.textContent = data.weekStartDate
-      ? new Date(data.weekStartDate).toISOString().slice(0, 10)
-      : "-";
-    grossPay.textContent = formatMoney(data.grossWeeklyPay);
-    weeklyPAYG.textContent = formatMoney(data.weeklyPAYG);
-    netPay.textContent = formatMoney(data.netPay);
-    annualIncome.textContent = formatMoney(data.annualIncome);
-    annualTax.textContent = formatMoney(data.annualTax);
-    superEl.textContent = formatMoney(data.employerSuperannuation);
+  function hidePayslipModal() {
+    const modal = document.getElementById('payslipDetailModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.classList.remove('modal-open');
+    
+    // Remove backdrop
+    const backdrop = document.getElementById('modalBackdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+  }
+
+  function showPayslipModal(payslip, isSpecial = false) {
+    // Update success message based on type
+    const successMessage = document.getElementById('modalSuccessMessage');
+    if (successMessage) {
+      const messageText = successMessage.querySelector('strong');
+      if (messageText) {
+        messageText.textContent = isSpecial 
+          ? 'Special Payslip created successfully!' 
+          : 'Payslip created successfully!';
+      }
+      successMessage.classList.remove('d-none');
+    }
+
+    // Update modal content
+    document.getElementById('modalPayslipId').textContent = payslip.payslipId || '-';
+    document.getElementById('modalWeekStartDate').textContent = payslip.weekStartDate 
+      ? formatDate(payslip.weekStartDate) 
+      : (payslip.dateStart ? `${formatDate(payslip.dateStart)} - ${formatDate(payslip.dateEnd)}` : '-');
+    document.getElementById('modalDateCreated').textContent = formatDate(payslip.dateCreated || new Date().toISOString());
+    document.getElementById('modalTotalHours').textContent = `${payslip.totalHoursWorked || 0} hours`;
+    document.getElementById('modalStandardPayRate').textContent = formatMoney(payslip.standardPayRate);
+    document.getElementById('modalGrossWeeklyPay').textContent = formatMoney(payslip.grossWeeklyPay);
+    document.getElementById('modalAnnualIncome').textContent = formatMoney(payslip.annualIncome);
+    document.getElementById('modalAnnualTax').textContent = formatMoney(payslip.annualTax);
+    document.getElementById('modalWeeklyPAYG').textContent = formatMoney(payslip.weeklyPAYG);
+    document.getElementById('modalNetPay').textContent = formatMoney(payslip.netPay);
+    document.getElementById('modalEmployerSuperannuation').textContent = formatMoney(payslip.employerSuperannuation);
+
+    // Show modal using vanilla JavaScript
+    const modal = document.getElementById('payslipDetailModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+    
+    // Add backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'modalBackdrop';
+    document.body.appendChild(backdrop);
   }
 
   function setLoading(isLoading) {
@@ -142,7 +161,6 @@
       e.preventDefault();
       hideMessages();
       setLoading(true);
-      resultBox && resultBox.classList.add("d-none");
 
       const staffId = Number(staffIdInput?.value || "");
       const weekStartDate = weekStartDateInput?.value || "";
@@ -179,8 +197,10 @@
         }
 
         const data = await response.json();
-        setResult(data);
         showSuccess("Payslip created successfully!");
+        
+        // Show modal with payslip details
+        showPayslipModal(data);
       } catch (err) {
         showError(err.message || "Failed to create payslip");
       } finally {
@@ -195,7 +215,6 @@
       e.preventDefault();
       hideMessages();
       setLoadingSpecial(true);
-      resultBoxSpecial && resultBoxSpecial.classList.add("d-none");
 
       const staffId = Number(specialStaffIdInput?.value || "");
       const payRate = Number(specialPayRateInput?.value || "");
@@ -253,9 +272,11 @@
           throw new Error(errMsg);
         }
 
-        const data = await response.json();
-        setResultSpecial(data);
-        showSuccess("Special payslip created successfully!");
+                 const data = await response.json();
+         showSuccess("Special payslip created successfully!");
+         
+         // Show modal with payslip details
+         showPayslipModal(data, true);
       } catch (err) {
         showError(err.message || "Failed to create special payslip");
       } finally {
@@ -307,18 +328,8 @@
     }
   }
 
-  function setResultSpecial(data) {
-    if (!resultBoxSpecial) return;
-    resultBoxSpecial.classList.remove("d-none");
-    specialTotalHours.textContent = data.totalHoursWorked ?? "-";
-    specialDateRange.textContent = `${formatDate(data.dateStart)} - ${formatDate(data.dateEnd)}`;
-    specialGrossPay.textContent = formatMoney(data.grossWeeklyPay);
-    specialWeeklyPAYG.textContent = formatMoney(data.weeklyPAYG);
-    specialNetPay.textContent = formatMoney(data.netPay);
-    specialAnnualIncome.textContent = formatMoney(data.annualIncome);
-    specialAnnualTax.textContent = formatMoney(data.annualTax);
-    specialSuper.textContent = formatMoney(data.employerSuperannuation);
-  }
+  // Global functions for onclick handlers
+  window.hidePayslipModal = hidePayslipModal;
 
   document.addEventListener('DOMContentLoaded', () => {
     populateStaffDropdown();
