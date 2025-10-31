@@ -24,8 +24,7 @@ async function getErrorMessage(response) {
   // New filter controls
   const filterRole = document.getElementById("filterRole");
   const filterContract = document.getElementById("filterContract");
-  const minStdPay = document.getElementById("minStdPay");
-  const maxStdPay = document.getElementById("maxStdPay");
+  const sortStdPay = document.getElementById("sortStdPay");
   const btnClearFilters = document.getElementById("btnClearFilters");
 
   // Guard page
@@ -116,9 +115,6 @@ async function getErrorMessage(response) {
     const role = (filterRole?.value || "").trim();
     const contract = (filterContract?.value || "").trim();
 
-    const minP = toNum(minStdPay?.value);
-    const maxP = toNum(maxStdPay?.value);
-
     const filtered = staffData.filter((s) => {
       // text search across common fields
       const textOk =
@@ -137,17 +133,23 @@ async function getErrorMessage(response) {
       const roleOk = !role || s.Role === role;
       const contractOk = !contract || s.ContractType === contract;
 
-      // numeric ranges (null/undefined treated as missing; must meet bounds if provided)
-      const p = parseFloat(s.StandardPayRate ?? "");
-
-      const payOk =
-        (minP == null || (Number.isFinite(p) && p >= minP)) &&
-        (maxP == null || (Number.isFinite(p) && p <= maxP));
-
-      return textOk && roleOk && contractOk && payOk;
+      return textOk && roleOk && contractOk;
     });
 
-    renderTable(filtered);
+    // sort by StdPay if requested
+    const sorted = [...filtered];
+    const dir = (sortStdPay?.value || "").trim();
+    if (dir === "asc" || dir === "desc") {
+      sorted.sort((a, b) => {
+        const pa = Number.parseFloat(a.StandardPayRate ?? "");
+        const pb = Number.parseFloat(b.StandardPayRate ?? "");
+        const aNum = Number.isFinite(pa) ? pa : Number.NEGATIVE_INFINITY;
+        const bNum = Number.isFinite(pb) ? pb : Number.NEGATIVE_INFINITY;
+        return dir === "asc" ? aNum - bNum : bNum - aNum;
+      });
+    }
+
+    renderTable(sorted);
   }
 
   // Wire events
@@ -155,8 +157,7 @@ async function getErrorMessage(response) {
     if (searchInput) searchInput.addEventListener(evt, applyFilters);
     if (filterRole) filterRole.addEventListener(evt, applyFilters);
     if (filterContract) filterContract.addEventListener(evt, applyFilters);
-    if (minStdPay) minStdPay.addEventListener(evt, applyFilters);
-    if (maxStdPay) maxStdPay.addEventListener(evt, applyFilters);
+    if (sortStdPay) sortStdPay.addEventListener(evt, applyFilters);
   });
 
   if (btnClearFilters) {
@@ -164,8 +165,7 @@ async function getErrorMessage(response) {
       if (searchInput) searchInput.value = "";
       if (filterRole) filterRole.value = "";
       if (filterContract) filterContract.value = "";
-      if (minStdPay) minStdPay.value = "";
-      if (maxStdPay) maxStdPay.value = "";
+      if (sortStdPay) sortStdPay.value = "";
       applyFilters();
     });
   }

@@ -8,6 +8,8 @@
   const filterDateFrom = document.getElementById("filterDateFrom");
   const filterDateTo = document.getElementById("filterDateTo");
   const confirmDeleteBtn = document.getElementById("confirmDelete");
+  const exportBtn = document.getElementById("btnExportPayslip");
+  const emailBtn = document.getElementById("btnEmailPayslip");
 
   let allPayslips = [];
   let filteredPayslips = [];
@@ -15,6 +17,9 @@
   let currentPage = 1;
   const itemsPerPage = 10;
   let deletePayslipId = null;
+  let selectedPayslipId = null;
+  let selectedStaffId = null;
+  let selectedWeekStartDate = null;
 
   function showError(message) {
     if (!loadError) return;
@@ -282,6 +287,13 @@
     confirmDeleteBtn.addEventListener('click', confirmDelete);
   }
 
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportPayslip);
+  }
+  if (emailBtn) {
+    emailBtn.addEventListener('click', emailPayslip);
+  }
+
   function hidePayslipModal() {
     const modal = document.getElementById('payslipDetailModal');
     modal.style.display = 'none';
@@ -300,6 +312,9 @@
     if (!payslip) return;
 
     // Update modal content
+    selectedPayslipId = payslip.payslipId;
+    selectedStaffId = payslip.staffId;
+    selectedWeekStartDate = payslip.weekStartDate;
     document.getElementById('modalPayslipId').textContent = payslip.payslipId;
     document.getElementById('modalWeekStartDate').textContent = formatDate(payslip.weekStartDate);
     document.getElementById('modalDateCreated').textContent = formatDate(payslip.dateCreated);
@@ -325,11 +340,95 @@
     document.body.appendChild(backdrop);
   }
 
+  async function emailPayslip() {
+    if (!selectedStaffId) return;
+    try {
+      setLoading(true);
+      hideError();
+
+      const response = await fetch(`${window.API_BASE}/Staffs/${selectedStaffId}`);
+      if (!response.ok) {
+        const errMsg = await getErrorMessage(response);
+        throw new Error(errMsg);
+      }
+
+      const staff = await response.json();
+      const email = staff.Email;
+      if (!email) {
+        throw new Error('Email not found for this staff');
+      }
+
+      const fullName = [staff.FirstName, staff.LastName].filter(Boolean).join(' ').trim();
+      const subject = fullName ? `Payslip for ${fullName}` : `Payslip ${selectedPayslipId}`;
+      const firstName = staff.FirstName || '';
+      const weekStart = selectedWeekStartDate ? new Date(selectedWeekStartDate).toLocaleDateString() : '';
+      const exportUrl = `${window.API_BASE}/Payslip/export/${selectedPayslipId}`;
+      const body = `Dear ${firstName},\n\nWe are kindly sending you the payslip for the week starting ${weekStart}.\n\nPlease DOWNLOAD HERE:\n${exportUrl}\n\nBest regards,\nFarm Time Management`;
+      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    } catch (err) {
+      showError(err.message || 'Failed to open email client');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function exportPayslip() {
+    if (!selectedPayslipId) return;
+    try {
+      setLoading(true);
+      hideError();
+
+      const url = `${window.API_BASE}/Payslip/export/${selectedPayslipId}`;
+      const response = await fetch(url, { method: 'GET' });
+      if (!response.ok) {
+        const errMsg = await getErrorMessage(response);
+        throw new Error(errMsg);
+      }
+
+      const blob = await response.blob();
+
+      let filename = `payslip_${selectedPayslipId}`;
+      const cd = response.headers.get('Content-Disposition') || response.headers.get('content-disposition');
+      if (cd) {
+        const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+        const extracted = match ? (match[1] || match[2]) : null;
+        if (extracted) {
+          try { filename = decodeURIComponent(extracted); } catch { filename = extracted; }
+        }
+      }
+
+      if (!/\.[A-Za-z0-9]{2,6}$/.test(filename)) {
+        const mime = blob.type || '';
+        if (mime.includes('pdf')) filename += '.pdf';
+        else if (mime.includes('msword') || mime.includes('officedocument.wordprocessingml.document')) filename += '.docx';
+        else if (mime.includes('excel') || mime.includes('spreadsheet')) filename += '.xlsx';
+        else if (mime.includes('csv')) filename += '.csv';
+        else filename += '.docx';
+      }
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      showError(err.message || 'Failed to export payslip');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Global functions for onclick handlers
   window.deletePayslip = deletePayslip;
   window.changePage = changePage;
   window.showPayslipDetail = showPayslipDetail;
   window.hidePayslipModal = hidePayslipModal;
+  window.exportPayslip = exportPayslip;
+  window.emailPayslip = emailPayslip;
 
   // Initialize
   document.addEventListener('DOMContentLoaded', async () => {
