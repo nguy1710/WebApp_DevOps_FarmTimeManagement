@@ -62,29 +62,15 @@
         </div>
       </div>
 
-      <!-- Numeric range filters -->
+      <!-- StdPay sort -->
       <div class="row g-2 mb-3">
-        <div class="col-6 col-md-4">
-          <label class="form-label mb-1">StdPay min</label>
-          <input
-            id="minStdPay"
-            type="number"
-            class="form-control"
-            step="0.01"
-            min="0"
-            placeholder="min"
-          />
-        </div>
-        <div class="col-6 col-md-4">
-          <label class="form-label mb-1">StdPay max</label>
-          <input
-            id="maxStdPay"
-            type="number"
-            class="form-control"
-            step="0.01"
-            min="0"
-            placeholder="max"
-          />
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1">StdPay sort</label>
+          <select id="sortStdPay" class="form-select">
+            <option value="">None</option>
+            <option value="asc">StdPay ↑ (low to high)</option>
+            <option value="desc">StdPay ↓ (high to low)</option>
+          </select>
         </div>
       </div>
 

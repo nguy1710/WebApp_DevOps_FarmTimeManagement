@@ -8,6 +8,7 @@
 
   let stream = null;
   let scanning = false;
+  let isAuthenticating = false;
 
   function showError(message) {
     if (!errorMessage) return;
@@ -83,6 +84,12 @@
   function scanQRCode() {
     if (!scanning) return;
 
+    // Keep camera running; if we're authenticating, just loop without decoding
+    if (isAuthenticating) {
+      requestAnimationFrame(scanQRCode);
+      return;
+    }
+
     const context = canvas.getContext('2d');
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
@@ -111,18 +118,27 @@
 
   async function handleQRCodeDetected(qrData) {
     try {
-      // Stop scanning
-      scanning = false;
-      stopCamera();
-
+      // Pause decoding but keep camera alive
+      isAuthenticating = true;
       console.log('QR Code detected:', qrData);
 
-      // Use QR data as scan result directly
-      await loginStaff(qrData);
+      const success = await loginStaff(qrData);
 
+      if (!success) {
+        // Resume scanning on failure
+        isAuthenticating = false;
+        scanning = true;
+        requestAnimationFrame(scanQRCode);
+      } else {
+        // On success, let the redirect happen; optionally stop camera
+        stopCamera();
+      }
     } catch (error) {
       console.error('Error processing QR code:', error);
       showError('Invalid QR code. Please try again or use manual login.');
+      isAuthenticating = false;
+      scanning = true;
+      requestAnimationFrame(scanQRCode);
     }
   }
 
@@ -130,8 +146,9 @@
     console.log('Attempting to login with scan result:', scanResult);
     
     if (!scanResult || scanResult.trim() === '') {
+      // Keep scanning; do not stop camera
       showError('Invalid scan result. Please try again.');
-      return;
+      return false;
     }
 
     try {
@@ -179,8 +196,11 @@
         window.location.href = 'staff-event.html';
       }, 1500);
 
+      return true;
+
     } catch (error) {
       showError(error.message || 'Login failed. Please try again.');
+      return false;
     }
   }
 
